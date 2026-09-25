@@ -9,10 +9,11 @@ class GameEngine{
         void executeCommand(char* command);
         char* getCurrentPhase();
         char* getCurrentState();
-        void setPhase(State* newState);
+        void setPhase(Phase* newPhase);
+        void setState(State* newState);
     private:
-        CurrentPhase* currentPhase;
-        CurrentState* currentState;
+        Phase* currentPhase;
+        State* currentState;
 };
 
 class Phase {
@@ -86,20 +87,5 @@ class Win : public State{
         Win();
         void transition(const char* command, GameEngine* gameEngine) override;
     };
-class CurrentPhase{
-    public:
-        const char* getCurrentPhase();
-    private:
-        CurrentPhase();
-        Phase* currentPhase;
-};
-class CurrentState{
-    public:
-        const char* getCurrentState();
-    private:
-        CurrentState();
-        State* currentState;
-};
-
 
 #endif

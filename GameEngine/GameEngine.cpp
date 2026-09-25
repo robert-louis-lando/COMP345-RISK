@@ -25,7 +25,7 @@ const char* State ::getName() const{
 Start :: Start(): State("Start"){}
 void Start :: transition(const char* command, GameEngine* gameEngine){
     if(std::strcmp(command, "loadmap") == 0){
-        gameEngine->setPhase(new MapLoaded());
+        gameEngine->setState(new MapLoaded());
     }
     else{
         throw std::invalid_argument("Wrong command for this state");
