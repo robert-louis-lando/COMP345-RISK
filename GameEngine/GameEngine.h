@@ -2,13 +2,15 @@
 #define GAME_STATES_H
 #define STRINGIFY(x) #x
 
+class Phase;
+class State;
 class GameEngine{
     public:
         GameEngine();
         ~GameEngine();
         void executeCommand(char* command);
-        char* getCurrentPhase();
-        char* getCurrentState();
+        const char* getCurrentPhase();
+        const char* getCurrentState();
         void setPhase(Phase* newPhase);
         void setState(State* newState);
     private:

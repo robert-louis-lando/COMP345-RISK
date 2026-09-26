@@ -3,7 +3,29 @@
 #include <stdexcept>
 #include <iostream>
 using namespace std;
+
+
 GameEngine :: GameEngine(): currentPhase(new Startup()), currentState(new Start()){}
+GameEngine :: ~GameEngine(){
+    delete currentPhase;
+    delete currentState;
+}
+void GameEngine :: executeCommand(char* command){
+    this->currentState->transition(command, this);
+}
+const char* GameEngine :: getCurrentPhase(){
+    return currentPhase->getName();
+}
+const char* GameEngine :: getCurrentState(){
+    return currentState->getName();
+}
+void GameEngine :: setPhase(Phase* phase){
+    this->currentPhase = phase;
+}
+void GameEngine :: setState(State* state){
+    this->currentState = state;
+}
+
 
 //custom constructor to assign a phase's name
 Phase :: Phase(const char* name): name(name){}
