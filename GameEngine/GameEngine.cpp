@@ -2,21 +2,34 @@
 #include <cstring>
 #include <stdexcept>
 #include <iostream>
+#include <string>
 using namespace std;
 
+//GameEngine
+GameEngine& GameEngine::getInstance(){
+    static GameEngine instance;
+    return instance;
+}
+GameEngine :: GameEngine(){
+    this->currentPhase = new Startup();
+    this->currentState = new Start();
+}
 
-GameEngine :: GameEngine(): currentPhase(new Startup()), currentState(new Start()){}
 GameEngine :: ~GameEngine(){
     delete currentPhase;
     delete currentState;
 }
-void GameEngine :: executeCommand(char* command){
+std::ostream& operator <<(std::ostream& os, const GameEngine& gameEngine){
+    os << "Game Engine-> CurrentPhase: "<< gameEngine.getCurrentPhase() <<", CurrentState: "<< gameEngine.getCurrentState();
+    return os;
+}
+void GameEngine :: executeCommand(const string* command){
     this->currentState->transition(command, this);
 }
-const char* GameEngine :: getCurrentPhase(){
+const string* GameEngine :: getCurrentPhase() const{
     return currentPhase->getName();
 }
-const char* GameEngine :: getCurrentState(){
+const string* GameEngine :: getCurrentState() const{
     return currentState->getName();
 }
 void GameEngine :: setPhase(Phase* phase){
@@ -26,28 +39,99 @@ void GameEngine :: setState(State* state){
     this->currentState = state;
 }
 
-
-//custom constructor to assign a phase's name
-Phase :: Phase(const char* name): name(name){}
-//getter to retrieve the phase name
-const char* Phase ::getName() const{
-    return name;
+//Phase
+Phase::Phase(){}
+Phase::~Phase(){
+    delete name;
+}
+Phase::Phase(const string* name) {
+    this->name = (name != nullptr) ? new std::string(*name) : nullptr;
+}
+Phase::Phase(const Phase& phase) {
+    this->name = (phase.name != nullptr) ? new std::string(*phase.name) : nullptr;
+}
+Phase& Phase::operator=(const Phase& phase){
+    if(this != &phase){
+        delete this->name;
+        this->name = (phase.name != nullptr) ? new std::string(*phase.name) : nullptr;
+    }
+    return *this;
+}
+std::ostream& operator <<(std::ostream& os, const Phase& phase){
+    os << *phase.getName();
+    return os;
+}
+const string* Phase::getName() const{
+    return this->name;
 }
 
-//default constructor calling the parent constructor with its name
-Startup :: Startup(): Phase("Startup"){}
-Play :: Play(): Phase("Startup"){}
-
-//custom constructor to assign a state's name
-State :: State(const char* name): name(name){}
-//getter to retrieve the state name
-const char* State ::getName() const{
-    return name;
+//Startup
+Startup :: Startup(): Phase(new std::string("Startup")){}
+Startup::Startup(const Startup& startup):Phase(startup) {}
+Startup& Startup::operator=(const Startup& startup){
+    if(this != &startup){
+        Phase::operator=(startup);
+    }
+    return *this;
+}
+std::ostream& operator <<(std::ostream& os, const Startup& startup){
+    os << *startup.getName();
+    return os;
 }
 
-Start :: Start(): State("Start"){}
-void Start :: transition(const char* command, GameEngine* gameEngine){
-    if(strcmp(command, "loadmap") == 0){
+//Play
+Play :: Play(): Phase(new std::string("Play")){}
+Play::Play(const Play& play):Phase(play) {}
+Play& Play::operator=(const Play& play){
+    if(this != &play){
+        Phase::operator=(play);
+    }
+    return *this;
+}
+std::ostream& operator <<(std::ostream& os, const Play& play){
+    os << *play.getName();
+    return os;
+}
+
+//State
+State::State(){}
+State::~State(){
+    delete name;
+}
+State::State(const State& state) {
+    this->name = (state.name != nullptr) ? new std::string(*state.name) : nullptr;
+}
+State :: State(const string* name): name(name){}
+State& State::operator=(const State& state){
+        if(this != &state){
+            delete name;
+            this->name = (state.name != nullptr) ? new std::string(*state.name) : nullptr;
+        }
+        return *this;
+}   
+std::ostream& operator <<(std::ostream& os, const State& state){
+    os << *state.getName();
+    return os;
+}
+const string* State ::getName() const{
+    return this->name;
+}
+
+//Start
+Start :: Start(): State(new std::string("Start")){}
+Start::Start(const Start& start):State(start){}
+Start& Start::operator=(const Start& start){
+    if(this != &start){
+        State::operator=(start);
+    }
+    return *this;
+}
+std::ostream& operator << (std::ostream& os, const Start& start){
+    os << *start.getName();
+    return os;
+}
+void Start :: transition(const string* command, GameEngine* gameEngine){
+    if(command->compare("loadmap") == 0){
         gameEngine->setState(new MapLoaded());
     }
     else{
@@ -55,12 +139,24 @@ void Start :: transition(const char* command, GameEngine* gameEngine){
     }
 }
 
-MapLoaded :: MapLoaded(): State("MapLoaded"){}
-void MapLoaded :: transition(const char* command, GameEngine* gameEngine){
-    if(strcmp(command, "loadmap") == 0){
+//MapLoaded
+MapLoaded :: MapLoaded(): State(new std::string("MapLoaded")){}
+MapLoaded::MapLoaded(const MapLoaded& mapLoaded):State(mapLoaded){}
+MapLoaded& MapLoaded::operator=(const MapLoaded& mapLoaded){
+    if(this != &mapLoaded){
+        State::operator=(mapLoaded);
+    }
+    return *this;
+}
+std::ostream& operator << (std::ostream& os, const MapLoaded& mapLoaded){
+    os << *mapLoaded.getName();
+    return os;
+}
+void MapLoaded :: transition(const string* command, GameEngine* gameEngine){
+    if(command->compare("loadmap") == 0){
         gameEngine->setState(new MapLoaded());
     }
-    else if(strcmp(command, "validatemap") == 0){
+    else if(command->compare("validatemap") == 0){
         gameEngine->setState(new MapValidated());
     }
     else{
@@ -68,9 +164,21 @@ void MapLoaded :: transition(const char* command, GameEngine* gameEngine){
     }
 }
 
-MapValidated :: MapValidated(): State("MapValidated"){}
-void MapValidated :: transition(const char* command, GameEngine* gameEngine){
-    if(strcmp(command, "addplayer") == 0){
+//MapValidated
+MapValidated :: MapValidated(): State(new std::string("MapValidated")){}
+MapValidated::MapValidated(const MapValidated& mapValidated):State(mapValidated){}
+MapValidated& MapValidated::operator=(const MapValidated& mapValidated){
+    if(this != &mapValidated){
+        State::operator=(mapValidated);
+    }
+    return *this;
+}
+std::ostream& operator << (std::ostream& os, const MapValidated& mapValidated){
+    os << *mapValidated.getName();
+    return os;
+}
+void MapValidated :: transition(const string* command, GameEngine* gameEngine){
+    if(command->compare("addplayer") == 0){
         gameEngine->setState(new PlayersAdded());
     }
     else{
@@ -78,12 +186,24 @@ void MapValidated :: transition(const char* command, GameEngine* gameEngine){
     }
 }
 
-PlayersAdded :: PlayersAdded(): State("PlayersAdded"){}
-void PlayersAdded :: transition(const char* command, GameEngine* gameEngine){
-    if(strcmp(command, "addplayer") == 0){
+//PlayersAdded
+PlayersAdded :: PlayersAdded(): State(new std::string("PlayersAdded")){}
+PlayersAdded::PlayersAdded(const PlayersAdded& playersAdded):State(playersAdded){}
+PlayersAdded& PlayersAdded::operator=(const PlayersAdded& playersAdded){
+    if(this != &playersAdded){
+        State::operator=(playersAdded);
+    }
+    return *this;
+}
+std::ostream& operator << (std::ostream& os, const PlayersAdded& playersAdded){
+    os << *playersAdded.getName();
+    return os;
+}
+void PlayersAdded :: transition(const string* command, GameEngine* gameEngine){
+    if(command->compare("addplayer") == 0){
         gameEngine->setState(new PlayersAdded());
     }
-    else if(strcmp(command, "assigncountries") == 0){
+    else if(command->compare("assigncountries") == 0){
         gameEngine->setState(new AssignReinforcement());
         gameEngine->setPhase(new Play());
     }
@@ -92,9 +212,21 @@ void PlayersAdded :: transition(const char* command, GameEngine* gameEngine){
     }
 }
 
-AssignReinforcement :: AssignReinforcement(): State("AssignReinforcement"){}
-void AssignReinforcement :: transition(const char* command, GameEngine* gameEngine){
-    if(strcmp(command, "issueorder") == 0){
+//AssignReinforcement
+AssignReinforcement :: AssignReinforcement(): State(new std::string("AssignReinforcement")){}
+AssignReinforcement::AssignReinforcement(const AssignReinforcement& assignReinforcement):State(assignReinforcement){}
+AssignReinforcement& AssignReinforcement::operator=(const AssignReinforcement& assignReinforcement){
+    if(this != &assignReinforcement){
+        State::operator=(assignReinforcement);
+    }
+    return *this;
+}
+std::ostream& operator << (std::ostream& os, const AssignReinforcement& assignReinforcement){
+    os << *assignReinforcement.getName();
+    return os;
+}
+void AssignReinforcement :: transition(const string* command, GameEngine* gameEngine){
+    if(command->compare("issueorder") == 0){
         gameEngine->setState(new IssueOrders());
     }
     else{
@@ -102,12 +234,24 @@ void AssignReinforcement :: transition(const char* command, GameEngine* gameEngi
     }
 }
 
-IssueOrders :: IssueOrders(): State("IssueOrders"){}
-void IssueOrders :: transition(const char* command, GameEngine* gameEngine){
-    if(strcmp(command, "issueorder") == 0){
+//IssueOrders
+IssueOrders :: IssueOrders(): State(new std::string("IssueOrders")){}
+IssueOrders::IssueOrders(const IssueOrders& issueOrders):State(issueOrders){}
+IssueOrders& IssueOrders::operator=(const IssueOrders& issueOrders){
+    if(this != &issueOrders){
+        State::operator=(issueOrders);
+    }
+    return *this;
+}
+std::ostream& operator << (std::ostream& os, const IssueOrders& issueOrders){
+    os << *issueOrders.getName();
+    return os;
+}
+void IssueOrders :: transition(const string* command, GameEngine* gameEngine){
+    if(command->compare("issueorder") == 0){
         gameEngine->setState(new IssueOrders());
     }
-    else if(strcmp(command, "endissueorders") == 0){
+    else if(command->compare("endissueorders") == 0){
         gameEngine->setState(new ExecuteOrders());
     }
     else{
@@ -115,15 +259,27 @@ void IssueOrders :: transition(const char* command, GameEngine* gameEngine){
     }
 }
 
-ExecuteOrders :: ExecuteOrders(): State("ExecuteOrders"){}
-void ExecuteOrders :: transition(const char* command, GameEngine* gameEngine){
-    if(strcmp(command, "exeorder") == 0){
+//ExecuteOrders
+ExecuteOrders :: ExecuteOrders(): State(new std::string("ExecuteOrders")){}
+ExecuteOrders::ExecuteOrders(const ExecuteOrders& executeOrders):State(executeOrders){}
+ExecuteOrders& ExecuteOrders::operator=(const ExecuteOrders& executeOrders){
+    if(this != &executeOrders){
+        State::operator=(executeOrders);
+    }
+    return *this;
+}
+std::ostream& operator << (std::ostream& os, const ExecuteOrders& executeOrders){
+    os << *executeOrders.getName();
+    return os;
+}
+void ExecuteOrders :: transition(const string* command, GameEngine* gameEngine){
+    if(command->compare("exeorder") == 0){
         gameEngine->setState(new ExecuteOrders());
     }
-    else if(strcmp(command, "endexecorders") == 0){
+    else if(command->compare("endexecorders") == 0){
         gameEngine->setState(new AssignReinforcement());
     }
-    else if(strcmp(command, "win") == 0){
+    else if(command->compare("win") == 0){
         gameEngine->setState(new Win());
     }
     else{
@@ -131,13 +287,25 @@ void ExecuteOrders :: transition(const char* command, GameEngine* gameEngine){
     }
 }
 
-Win :: Win(): State("Win"){}
-void Win :: transition(const char* command, GameEngine* gameEngine){
-    if(strcmp(command, "end") == 0){
+//Win
+Win :: Win(): State(new std::string("Win")){}
+Win::Win(const Win& win):State(win){}
+Win& Win::operator=(const Win& win){
+    if(this != &win){
+        State::operator=(win);
+    }
+    return *this;
+}
+std::ostream& operator << (std::ostream& os, const Win& win){
+    os << *win.getName();
+    return os;
+}
+void Win :: transition(const string* command, GameEngine* gameEngine){
+    if(command->compare("end") == 0){
         cout << "Ending the game" << endl; 
         exit(0);
     }
-    else if(std::strcmp(command, "play") == 0){
+    else if(command->compare("play") == 0){
         gameEngine->setState(new Start());
         gameEngine->setPhase(new Startup());
     }

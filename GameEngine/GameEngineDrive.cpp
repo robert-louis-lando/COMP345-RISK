@@ -1,25 +1,27 @@
 #include <iostream>
 #include <string>
+#include <stdexcept>
 #include "GameEngine.h"
 using namespace std;
 
 
 int main(){
-    GameEngine* gameEngine = new GameEngine();
+    GameEngine& gameEngine = GameEngine::getInstance();
     cout << "The game has booted" << endl;
-    char* command = new char[100];
+    string* command;
     while(true){
         cout << "Enter a command" << endl;
-        cin >> command;
-        try{
-            gameEngine->executeCommand(command);
+        if (!(std::cin >> command)) { 
+            break;
         }
-        catch(invalid_argument e){
+        try{
+            gameEngine->executeCommand(&command);
+        }
+        catch(const invalid_argument e){
             cout << "Invalid command, please try a different one"<<endl;
         }
 
     }
     
-    delete[] command;
     return 0;
 };
