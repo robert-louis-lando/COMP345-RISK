@@ -24,7 +24,11 @@ std::ostream& operator <<(std::ostream& os, const GameEngine& gameEngine){
     return os;
 }
 void GameEngine :: executeCommand(const string* command){
+    std::string oldState = *currentState->getName();
+    std::string oldPhase = *currentPhase->getName();
     this->currentState->transition(command, this);
+    cout << "Was in state: "<< oldState<<", Was in Phase: "<<oldPhase<<endl;
+    cout << "Transition to state: "<< *currentState->getName()<<", Transition to phase: "<<*currentPhase->getName()<<endl;
 }
 const string* GameEngine :: getCurrentPhase() const{
     return currentPhase->getName();
@@ -273,7 +277,7 @@ std::ostream& operator << (std::ostream& os, const ExecuteOrders& executeOrders)
     return os;
 }
 void ExecuteOrders :: transition(const string* command, GameEngine* gameEngine){
-    if(command->compare("exeorder") == 0){
+    if(command->compare("execorder") == 0){
         gameEngine->setState(new ExecuteOrders());
     }
     else if(command->compare("endexecorders") == 0){
