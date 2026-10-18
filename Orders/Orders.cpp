@@ -5,43 +5,43 @@
 // ============================================================
 
 // Default constructor for Order
-Order::Order() : playerName(""), effect(""), executed(false) {}
+Order::Order() : playerName(new string()), effect(new string()), executed(new bool(false)) {}
 
 // Constructor for Order
-Order::Order(const string& playerName) {
-    this->playerName = playerName;
-    effect = "";
-    executed = false;
-}
+Order::Order(const string& playerName)
+    : playerName(new string(playerName)), effect(new string()), executed(new bool(false)) {}
 
 // Copy constructor for Order
-Order::Order(const Order& other) {
-    playerName = other.playerName;
-    effect = other.effect;
-    executed = other.executed;
-}
+Order::Order(const Order& other)
+    : playerName(new string(*other.playerName)),
+      effect(new string(*other.effect)),
+      executed(new bool(*other.executed)) {}
 
 // Assignment operator for Order
 Order& Order::operator=(const Order& other) {
     if (this != &other) {
-        playerName = other.playerName;
-        effect = other.effect;
-        executed = other.executed;
+        *playerName = *other.playerName;
+        *effect = *other.effect;
+        *executed = *other.executed;
     }
     return *this;
 }
 
 // Destructor for Order
-Order::~Order() {}
+Order::~Order() {
+    delete playerName;
+    delete effect;
+    delete executed;
+}
 
 // Stream insertion operator for Order
 ostream& operator<<(ostream& out, const Order& order) {
 
-    out << order.getType() << " order created by " << order.playerName;
+    out << order.getType() << " order created by " << *order.playerName;
 
-    if (order.executed) {
+    if (*order.executed) {
         out << " [Executed]";
-        out << " Effect: " << order.effect;
+        out << " Effect: " << *order.effect;
     } else {
         out << " [Not executed]";
     }
@@ -53,35 +53,35 @@ ostream& operator<<(ostream& out, const Order& order) {
 // ============================================================
 
 // Default constructor for Deploy
-Deploy::Deploy() : Order(){
-    targetTerritory = "";
-    numberOfArmies = 0;
-}
+Deploy::Deploy() : Order(), targetTerritory(new string()), numberOfArmies(new int(0)) {}
 
 // Constructor for Deploy
-Deploy::Deploy(const string& playerName, const string& targetTerritory, int numberOfArmies) : Order(playerName) {
-    this->targetTerritory = targetTerritory;
-    this->numberOfArmies = numberOfArmies;
-}
+Deploy::Deploy(const string& playerName, const string& targetTerritory, int numberOfArmies)
+    : Order(playerName),
+      targetTerritory(new string(targetTerritory)),
+      numberOfArmies(new int(numberOfArmies)) {}
 
 // Copy constructor for Deploy
-Deploy::Deploy(const Deploy& other) : Order(other) {
-    targetTerritory = other.targetTerritory;
-    numberOfArmies = other.numberOfArmies;
-}
+Deploy::Deploy(const Deploy& other)
+    : Order(other),
+      targetTerritory(new string(*other.targetTerritory)),
+      numberOfArmies(new int(*other.numberOfArmies)) {}
 
 // Assignment operator for Deploy
 Deploy& Deploy::operator=(const Deploy& other) {
     if (this != &other) {
         Order::operator=(other);
-        targetTerritory = other.targetTerritory;
-        numberOfArmies = other.numberOfArmies;
+        *targetTerritory = *other.targetTerritory;
+        *numberOfArmies = *other.numberOfArmies;
     }
     return *this;
 }
 
 // Destructor for Deploy
-Deploy::~Deploy() {}
+Deploy::~Deploy() {
+    delete targetTerritory;
+    delete numberOfArmies;
+}
 
 // Validates a Deploy order
 
@@ -89,17 +89,17 @@ Deploy::~Deploy() {}
 // For now, the order must contain a player, a territory, and a positive number of armies. 
 
 bool Deploy::validate() const{
-    return !playerName.empty() && !targetTerritory.empty() && numberOfArmies > 0;
+    return !playerName->empty() && !targetTerritory->empty() && *numberOfArmies > 0;
 }
 
 // Executes the Deploy order
 void Deploy::execute() {
     if (validate()) {
-        executed = true;
-        effect = "Deployed " + to_string(numberOfArmies) + " armies to " + targetTerritory;
+        *executed = true;
+        *effect = "Deployed " + to_string(*numberOfArmies) + " armies to " + *targetTerritory;
     } else {
-        executed = false;
-        effect = "Deploy order is invalid.";
+        *executed = false;
+        *effect = "Deploy order is invalid.";
     }
 }
 
@@ -116,8 +116,8 @@ string Deploy::getType() const {
 // Stream insertion operator for Deploy
 ostream& operator<<(ostream& out, const Deploy& order) {
     out << static_cast<const Order&>(order);
-    out << " | Target: " << order.targetTerritory;
-    out << " | Armies: " << order.numberOfArmies;
+    out << " | Target: " << *order.targetTerritory;
+    out << " | Armies: " << *order.numberOfArmies;
     return out;
 }
 
@@ -126,53 +126,57 @@ ostream& operator<<(ostream& out, const Deploy& order) {
 // ============================================================
 
 // Default constructor for Advance
-Advance::Advance() : Order() {
-    sourceTerritory = "";
-    targetTerritory = "";
-    numberOfArmies = 0;
-}
+Advance::Advance()
+    : Order(),
+      sourceTerritory(new string()),
+      targetTerritory(new string()),
+      numberOfArmies(new int(0)) {}
 
 // Constructor for Advance
-Advance::Advance(const string& playerName, const string& sourceTerritory, const string& targetTerritory, int numberOfArmies) : Order(playerName) {
-    this->sourceTerritory = sourceTerritory;
-    this->targetTerritory = targetTerritory;
-    this->numberOfArmies = numberOfArmies;
-}
+Advance::Advance(const string& playerName, const string& sourceTerritory, const string& targetTerritory, int numberOfArmies)
+    : Order(playerName),
+      sourceTerritory(new string(sourceTerritory)),
+      targetTerritory(new string(targetTerritory)),
+      numberOfArmies(new int(numberOfArmies)) {}
 
 // Copy constructor for Advance
-Advance::Advance(const Advance& other) : Order(other) {
-    sourceTerritory = other.sourceTerritory;
-    targetTerritory = other.targetTerritory;
-    numberOfArmies = other.numberOfArmies;
-}
+Advance::Advance(const Advance& other)
+    : Order(other),
+      sourceTerritory(new string(*other.sourceTerritory)),
+      targetTerritory(new string(*other.targetTerritory)),
+      numberOfArmies(new int(*other.numberOfArmies)) {}
 
 // Assignment operator for Advance
 Advance& Advance::operator=(const Advance& other) {
     if (this != &other) {
         Order::operator=(other);
-        sourceTerritory = other.sourceTerritory;
-        targetTerritory = other.targetTerritory;
-        numberOfArmies = other.numberOfArmies;
+        *sourceTerritory = *other.sourceTerritory;
+        *targetTerritory = *other.targetTerritory;
+        *numberOfArmies = *other.numberOfArmies;
     }
     return *this;
 }
 
 // Destructor for Advance
-Advance::~Advance() {}
+Advance::~Advance() {
+    delete sourceTerritory;
+    delete targetTerritory;
+    delete numberOfArmies;
+}
 
 // Validates an Advance order
 bool Advance::validate() const {
-    return !playerName.empty() && !sourceTerritory.empty() && !targetTerritory.empty() && numberOfArmies > 0 && sourceTerritory != targetTerritory;
+    return !playerName->empty() && !sourceTerritory->empty() && !targetTerritory->empty() && *numberOfArmies > 0 && *sourceTerritory != *targetTerritory;
 }
 
 // Executes the Advance order
 void Advance::execute() {
     if (validate()) {
-        executed = true;
-        effect = "Advanced " + to_string(numberOfArmies) + " armies from " + sourceTerritory + " to " + targetTerritory;
+        *executed = true;
+        *effect = "Advanced " + to_string(*numberOfArmies) + " armies from " + *sourceTerritory + " to " + *targetTerritory;
     } else {
-        executed = false;
-        effect = "Advance order is invalid.";
+        *executed = false;
+        *effect = "Advance order is invalid.";
     }
 }
 
@@ -189,9 +193,9 @@ string Advance::getType() const {
 // Stream insertion operator for Advance
 ostream& operator<<(ostream& out, const Advance& order) {
     out << static_cast<const Order&>(order);
-    out << " | From: " << order.sourceTerritory;
-    out << " | To: " << order.targetTerritory;
-    out << " | Armies: " << order.numberOfArmies;
+    out << " | From: " << *order.sourceTerritory;
+    out << " | To: " << *order.targetTerritory;
+    out << " | Armies: " << *order.numberOfArmies;
     return out;
 }
 
@@ -200,45 +204,43 @@ ostream& operator<<(ostream& out, const Advance& order) {
 // ============================================================
 
 // Default constructor for Bomb
-Bomb::Bomb() : Order() {
-    targetTerritory = "";
-}
+Bomb::Bomb() : Order(), targetTerritory(new string()) {}
 
 // Constructor for Bomb
-Bomb::Bomb(const string& playerName, const string& targetTerritory) : Order(playerName) {
-    this->targetTerritory = targetTerritory;
-}
+Bomb::Bomb(const string& playerName, const string& targetTerritory)
+    : Order(playerName), targetTerritory(new string(targetTerritory)) {}
 
 // Copy constructor for Bomb
-Bomb::Bomb(const Bomb& other) : Order(other) {
-    targetTerritory = other.targetTerritory;
-}
+Bomb::Bomb(const Bomb& other)
+    : Order(other), targetTerritory(new string(*other.targetTerritory)) {}
 
 // Assignment operator for Bomb
 Bomb& Bomb::operator=(const Bomb& other) {
     if (this != &other) {
         Order::operator=(other);
-        targetTerritory = other.targetTerritory;
+        *targetTerritory = *other.targetTerritory;
     }
     return *this;
 }
 
 // Destructor for Bomb
-Bomb::~Bomb() {}
+Bomb::~Bomb() {
+    delete targetTerritory;
+}
 
 // Validates a Bomb order
 bool Bomb::validate() const {
-    return !playerName.empty() && !targetTerritory.empty();
+    return !playerName->empty() && !targetTerritory->empty();
 }
 
 // Executes the Bomb order
 void Bomb::execute() {
     if (validate()) {
-        executed = true;
-        effect = "Bombed territory " + targetTerritory;
+        *executed = true;
+        *effect = "Bombed territory " + *targetTerritory;
     } else {
-        executed = false;
-        effect = "Bomb order is invalid.";
+        *executed = false;
+        *effect = "Bomb order is invalid.";
     }
 }
 
@@ -255,7 +257,7 @@ string Bomb::getType() const {
 // Stream insertion operator for Bomb
 ostream& operator<<(ostream& out, const Bomb& order) {
     out << static_cast<const Order&>(order);
-    out << " | Target: " << order.targetTerritory;
+    out << " | Target: " << *order.targetTerritory;
     return out;
 }
 
@@ -264,45 +266,43 @@ ostream& operator<<(ostream& out, const Bomb& order) {
 // ============================================================
 
 // Default constructor for Blockade
-Blockade::Blockade() : Order() {
-    targetTerritory = "";
-}
+Blockade::Blockade() : Order(), targetTerritory(new string()) {}
 
 // Constructor for Blockade
-Blockade::Blockade(const string& playerName, const string& targetTerritory) : Order(playerName) {
-    this->targetTerritory = targetTerritory;
-}
+Blockade::Blockade(const string& playerName, const string& targetTerritory)
+    : Order(playerName), targetTerritory(new string(targetTerritory)) {}
 
 // Copy constructor for Blockade
-Blockade::Blockade(const Blockade& other) : Order(other) {
-    targetTerritory = other.targetTerritory;
-}
+Blockade::Blockade(const Blockade& other)
+    : Order(other), targetTerritory(new string(*other.targetTerritory)) {}
 
 // Assignment operator for Blockade
 Blockade& Blockade::operator=(const Blockade& other) {
     if (this != &other) {
         Order::operator=(other);
-        targetTerritory = other.targetTerritory;
+        *targetTerritory = *other.targetTerritory;
     }
     return *this;
 }
 
 // Destructor for Blockade
-Blockade::~Blockade() {}
+Blockade::~Blockade() {
+    delete targetTerritory;
+}
 
 // Validates a Blockade order
 bool Blockade::validate() const {
-    return !playerName.empty() && !targetTerritory.empty();
+    return !playerName->empty() && !targetTerritory->empty();
 }
 
 // Executes the Blockade order
 void Blockade::execute() {
     if (validate()) {
-        executed = true;
-        effect = "Blockaded territory " + targetTerritory;
+        *executed = true;
+        *effect = "Blockaded territory " + *targetTerritory;
     } else {
-        executed = false;
-        effect = "Blockade order is invalid.";
+        *executed = false;
+        *effect = "Blockade order is invalid.";
     }
 }
 
@@ -319,7 +319,7 @@ string Blockade::getType() const {
 // Stream insertion operator for Blockade
 ostream& operator<<(ostream& out, const Blockade& order) {
     out << static_cast<const Order&>(order);
-    out << " | Target: " << order.targetTerritory;
+    out << " | Target: " << *order.targetTerritory;
     return out;
 }
 
@@ -328,53 +328,57 @@ ostream& operator<<(ostream& out, const Blockade& order) {
 // ============================================================
 
 // Default constructor for Airlift
-Airlift::Airlift() : Order() {
-    sourceTerritory = "";
-    targetTerritory = "";
-    numberOfArmies = 0;
-}
+Airlift::Airlift()
+    : Order(),
+      sourceTerritory(new string()),
+      targetTerritory(new string()),
+      numberOfArmies(new int(0)) {}
 
 // Constructor for Airlift
-Airlift::Airlift(const string& playerName, const string& sourceTerritory, const string& targetTerritory, int numberOfArmies) : Order(playerName) {
-    this->sourceTerritory = sourceTerritory;
-    this->targetTerritory = targetTerritory;
-    this->numberOfArmies = numberOfArmies;
-}
+Airlift::Airlift(const string& playerName, const string& sourceTerritory, const string& targetTerritory, int numberOfArmies)
+    : Order(playerName),
+      sourceTerritory(new string(sourceTerritory)),
+      targetTerritory(new string(targetTerritory)),
+      numberOfArmies(new int(numberOfArmies)) {}
 
 // Copy constructor for Airlift
-Airlift::Airlift(const Airlift& other) : Order(other) {
-    sourceTerritory = other.sourceTerritory;
-    targetTerritory = other.targetTerritory;
-    numberOfArmies = other.numberOfArmies;
-}
+Airlift::Airlift(const Airlift& other)
+    : Order(other),
+      sourceTerritory(new string(*other.sourceTerritory)),
+      targetTerritory(new string(*other.targetTerritory)),
+      numberOfArmies(new int(*other.numberOfArmies)) {}
 
 // Assignment operator for Airlift
 Airlift& Airlift::operator=(const Airlift& other) {
     if (this != &other) {
         Order::operator=(other);
-        sourceTerritory = other.sourceTerritory;
-        targetTerritory = other.targetTerritory;
-        numberOfArmies = other.numberOfArmies;
+        *sourceTerritory = *other.sourceTerritory;
+        *targetTerritory = *other.targetTerritory;
+        *numberOfArmies = *other.numberOfArmies;
     }
     return *this;
 }
 
 // Destructor for Airlift
-Airlift::~Airlift() {}
+Airlift::~Airlift() {
+    delete sourceTerritory;
+    delete targetTerritory;
+    delete numberOfArmies;
+}
 
 // Validates an Airlift order
 bool Airlift::validate() const {
-    return !playerName.empty() && !sourceTerritory.empty() && !targetTerritory.empty() && numberOfArmies > 0 && sourceTerritory != targetTerritory;
+    return !playerName->empty() && !sourceTerritory->empty() && !targetTerritory->empty() && *numberOfArmies > 0 && *sourceTerritory != *targetTerritory;
 }
 
 // Executes the Airlift order
 void Airlift::execute() {
     if (validate()) {
-        executed = true;
-        effect = "Airlifted " + to_string(numberOfArmies) + " armies from " + sourceTerritory + " to " + targetTerritory;
+        *executed = true;
+        *effect = "Airlifted " + to_string(*numberOfArmies) + " armies from " + *sourceTerritory + " to " + *targetTerritory;
     } else {
-        executed = false;
-        effect = "Airlift order is invalid.";
+        *executed = false;
+        *effect = "Airlift order is invalid.";
     }
 }
 
@@ -391,9 +395,9 @@ string Airlift::getType() const {
 // Stream insertion operator for Airlift
 ostream& operator<<(ostream& out, const Airlift& order) {
     out << static_cast<const Order&>(order);
-    out << " | From: " << order.sourceTerritory;
-    out << " | To: " << order.targetTerritory;
-    out << " | Armies: " << order.numberOfArmies;
+    out << " | From: " << *order.sourceTerritory;
+    out << " | To: " << *order.targetTerritory;
+    out << " | Armies: " << *order.numberOfArmies;
     return out;
 }
 
@@ -402,45 +406,43 @@ ostream& operator<<(ostream& out, const Airlift& order) {
 // ============================================================
 
 // Default constructor for Negotiate
-Negotiate::Negotiate() : Order() {
-    targetPlayer = "";
-}
+Negotiate::Negotiate() : Order(), targetPlayer(new string()) {}
 
 // Constructor for Negotiate
-Negotiate::Negotiate(const string& playerName, const string& targetPlayer) : Order(playerName) {
-    this->targetPlayer = targetPlayer;
-}
+Negotiate::Negotiate(const string& playerName, const string& targetPlayer)
+    : Order(playerName), targetPlayer(new string(targetPlayer)) {}
 
 // Copy constructor for Negotiate
-Negotiate::Negotiate(const Negotiate& other) : Order(other) {
-    targetPlayer = other.targetPlayer;
-}
+Negotiate::Negotiate(const Negotiate& other)
+    : Order(other), targetPlayer(new string(*other.targetPlayer)) {}
 
 // Assignment operator for Negotiate
 Negotiate& Negotiate::operator=(const Negotiate& other) {
     if (this != &other) {
         Order::operator=(other);
-        targetPlayer = other.targetPlayer;
+        *targetPlayer = *other.targetPlayer;
     }
     return *this;
 }
 
 // Destructor for Negotiate
-Negotiate::~Negotiate() {}
+Negotiate::~Negotiate() {
+    delete targetPlayer;
+}
 
 // Validates a Negotiate order
 bool Negotiate::validate() const {
-    return !playerName.empty() && !targetPlayer.empty() && playerName != targetPlayer;
+    return !playerName->empty() && !targetPlayer->empty() && *playerName != *targetPlayer;
 }
 
 // Executes the Negotiate order
 void Negotiate::execute() {
     if (validate()) {
-        executed = true;
-        effect = playerName + " negotiated with " + targetPlayer;
+        *executed = true;
+        *effect = *playerName + " negotiated with " + *targetPlayer;
     } else {
-        executed = false;
-        effect = "Negotiate order is invalid.";
+        *executed = false;
+        *effect = "Negotiate order is invalid.";
     }
 }
 
@@ -457,7 +459,7 @@ string Negotiate::getType() const {
 // Stream insertion operator for Negotiate
 ostream& operator<<(ostream& out, const Negotiate& order) {
     out << static_cast<const Order&>(order);
-    out << " | Target Player: " << order.targetPlayer;
+    out << " | Target Player: " << *order.targetPlayer;
     return out;
 }
 

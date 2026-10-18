@@ -15,9 +15,9 @@ using namespace std;
 
 class Order{
     protected:
-        string playerName;
-        string effect;
-        bool executed;
+        string* playerName;
+        string* effect;
+        bool* executed;
 
     public:
         // Default constructor
@@ -54,8 +54,8 @@ class Order{
 // A deploy order represents placing armies on a territory.
 class Deploy : public Order {
     private:
-        string targetTerritory;
-        int numberOfArmies;
+        string* targetTerritory;
+        int* numberOfArmies;
 
     public:
         // Default constructor
@@ -93,9 +93,9 @@ class Deploy : public Order {
 
 class Advance : public Order{
     private:
-        string sourceTerritory;
-        string targetTerritory;
-        int numberOfArmies;
+        string* sourceTerritory;
+        string* targetTerritory;
+        int* numberOfArmies;
     
     public:
         // Default constructor
@@ -133,7 +133,7 @@ class Advance : public Order{
 
 class Bomb : public Order{
     private:
-        string targetTerritory;
+        string* targetTerritory;
 
     public:
         // Default constructor
@@ -170,7 +170,7 @@ class Bomb : public Order{
 // A blockade order represents turning a territory into a blockade
 class Blockade : public Order{
     private:
-        string targetTerritory;
+        string* targetTerritory;
 
     public:
         // Default constructor
@@ -207,9 +207,9 @@ class Blockade : public Order{
 // An airlift order represents moving armies between two territories without requiring them to be adjacent
 class Airlift : public Order{
     private:
-        string sourceTerritory;
-        string targetTerritory;
-        int numberOfArmies;
+        string* sourceTerritory;
+        string* targetTerritory;
+        int* numberOfArmies;
 
     public:
         // Default constructor
@@ -246,7 +246,7 @@ class Airlift : public Order{
 // A negotiate order represents negotiating with another player
 class Negotiate : public Order{
     private:
-        string targetPlayer;
+        string* targetPlayer;
 
     public:
         // Default constructor
