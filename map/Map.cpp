@@ -10,22 +10,22 @@
 
 int Continent::getId() const
 {
-    return id;
+    return *id;
 }
 
 Continent::Continent(const std::string &name, int id, int bonusArmyCount, const std::string &color)
 {
     this->name = new std::string(name);
-    this->id = id;
-    this->bonusArmyCount = bonusArmyCount;
+    this->id = new int(id);
+    this->bonusArmyCount = new int(bonusArmyCount);
     this->color = new std::string(color);
 }
 
 Continent::Continent(const Continent &other)
 {
     this->name = new std::string(*other.name);
-    this->id = other.id;
-    this->bonusArmyCount = other.bonusArmyCount;
+    this->id = new int(*other.id);
+    this->bonusArmyCount = new int(*other.bonusArmyCount);
     this->color = new std::string(*other.color);
 }
 
@@ -34,8 +34,8 @@ Continent &Continent::operator=(const Continent &other)
     if (this != &other)
     {
         *name = *other.name;
-        this->id = other.id;
-        this->bonusArmyCount = other.bonusArmyCount;
+        *id = *other.id;
+        *bonusArmyCount = *other.bonusArmyCount;
         *color = *other.color;
     }
     return *this;
@@ -44,41 +44,43 @@ Continent &Continent::operator=(const Continent &other)
 Continent::~Continent()
 {
     delete name;
+    delete id;
+    delete bonusArmyCount;
     delete color;
 }
 
 std::ostream &operator<<(std::ostream &out, const Continent &continent)
 {
-    out << "Continent: " << *continent.name << " (ID: " << continent.id << ", Bonus Armies: " << continent.bonusArmyCount << ", Color: " << *continent.color << ")";
+    out << "Continent: " << *continent.name << " (ID: " << *continent.id << ", Bonus Armies: " << *continent.bonusArmyCount << ", Color: " << *continent.color << ")";
     return out;
 }
 
 int Territory::getId() const
 {
-    return id;
+    return *id;
 }
 
 Territory::Territory(const std::string &name, int x, int y, int id, int armyCount, Continent *continent)
 {
     this->name = new std::string(name);
-    this->x = x;
-    this->y = y;
-    this->id = id;
+    this->x = new int(x);
+    this->y = new int(y);
+    this->id = new int(id);
     this->adjacentTerritories = new std::vector<Territory *>();
     this->owner = nullptr;
-    this->armyCount = armyCount;
+    this->armyCount = new int(armyCount);
     this->continent = continent;
 }
 
 Territory::Territory(const Territory &other)
 {
     this->name = new std::string(*other.name);
-    this->x = other.x;
-    this->y = other.y;
-    this->id = other.id;
+    this->x = new int(*other.x);
+    this->y = new int(*other.y);
+    this->id = new int(*other.id);
     this->adjacentTerritories = new std::vector<Territory *>(*other.adjacentTerritories);
     this->owner = other.owner;
-    this->armyCount = other.armyCount;
+    this->armyCount = new int(*other.armyCount);
     this->continent = other.continent;
 }
 
@@ -87,12 +89,12 @@ Territory &Territory::operator=(const Territory &other)
     if (this != &other)
     {
         *name = *other.name;
-        this->x = other.x;
-        this->y = other.y;
-        this->id = other.id;
+        *x = *other.x;
+        *y = *other.y;
+        *id = *other.id;
         *adjacentTerritories = *other.adjacentTerritories;
         this->owner = other.owner;
-        this->armyCount = other.armyCount;
+        *armyCount = *other.armyCount;
         this->continent = other.continent;
     }
     return *this;
@@ -101,12 +103,16 @@ Territory &Territory::operator=(const Territory &other)
 Territory::~Territory()
 {
     delete name;
+    delete x;
+    delete y;
+    delete id;
     delete adjacentTerritories;
+    delete armyCount;
 }
 
 std::ostream &operator<<(std::ostream &out, const Territory &territory)
 {
-    out << "Territory: " << *territory.name << " (ID: " << territory.id << ", Coordinates: (" << territory.x << ", " << territory.y << "), Army Count: " << territory.armyCount << ")";
+    out << "Territory: " << *territory.name << " (ID: " << *territory.id << ", Coordinates: (" << *territory.x << ", " << *territory.y << "), Army Count: " << *territory.armyCount << ")";
     return out;
 }
 

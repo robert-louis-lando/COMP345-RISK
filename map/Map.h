@@ -10,18 +10,18 @@ class Continent
 {
 private:
     std::string *name; // owns
-    int id;
-    int bonusArmyCount;
+    int *id;             // owns
+    int *bonusArmyCount; // owns
     std::string *color; // owns
 
 public:
-    /** @brief Create a continent, copying its name and color into owned strings. */
+    /** @brief Create a continent, copying all metadata into owned storage. */
     Continent(const std::string &name, int id, int bonusArmyCount, const std::string &color);
-    /** @brief Deep-copy the owned name and color. */
+    /** @brief Deep-copy all owned metadata. */
     Continent(const Continent &other);
-    /** @brief Copy metadata without sharing the owned strings. */
+    /** @brief Copy metadata without sharing owned storage. */
     Continent &operator=(const Continent &other);
-    /** @brief Release the owned name and color. */
+    /** @brief Release all owned metadata. */
     ~Continent();
     /** @brief Print the continent's name, ID, bonus, and color. */
     friend std::ostream &operator<<(std::ostream &out, const Continent &continent);
@@ -37,22 +37,22 @@ class Territory
 {
 private:
     std::string *name; // owns
-    int x;
-    int y;
-    int id;
+    int *x; // owns
+    int *y; // owns
+    int *id; // owns
     std::vector<Territory *> *adjacentTerritories; // owns the vector, not its neighbor pointers
     Player *owner;                                 // borrows; never deletes the player
-    int armyCount;
+    int *armyCount; // owns
     Continent *continent; // borrows; Map owns the continent
 
 public:
-    /** @brief Create a territory; copy its name, start with no neighbors or owner, and borrow continent. */
+    /** @brief Copy territory metadata into owned storage, start with no neighbors or owner, and borrow continent. */
     Territory(const std::string &name, int x, int y, int id, int armyCount, Continent *continent);
     /** @brief Copy owned storage; borrowed graph links are rebound when a whole Map is copied. */
     Territory(const Territory &other);
     /** @brief Copy state and owned storage while retaining borrowed-link semantics. */
     Territory &operator=(const Territory &other);
-    /** @brief Delete the owned name and adjacency vector, not neighbors, player, or continent. */
+    /** @brief Delete owned metadata and adjacency vector, not neighbors, player, or continent. */
     ~Territory();
     /** @brief Print the territory's name, ID, coordinates, and army count. */
     friend std::ostream &operator<<(std::ostream &out, const Territory &territory);
