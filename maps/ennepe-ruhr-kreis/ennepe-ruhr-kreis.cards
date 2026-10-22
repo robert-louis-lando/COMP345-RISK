@@ -1,0 +1,59 @@
+; cards: ennepe-ruhr-kreis.cards
+; cards made with the map maker
+; yura.net Risk 1.0.9.3
+
+[cards]
+Infantry 1
+Infantry 2
+Infantry 3
+Cavalry 4
+Cavalry 5
+Cavalry 6
+Cannon 7
+Cannon 8
+Cannon 9
+Infantry 10
+Infantry 11
+Infantry 12
+Cavalry 13
+Cavalry 14
+Cavalry 15
+Cannon 16
+Cannon 17
+Cannon 18
+Infantry 19
+Infantry 20
+Infantry 21
+Cavalry 22
+Cavalry 23
+Cavalry 24
+Cannon 25
+Cannon 26
+Cannon 27
+Infantry 28
+Infantry 29
+Cavalry 30
+Cavalry 31
+Cannon 32
+Cannon 33
+wildcard
+wildcard
+
+; destroy x occupy x x continents x x x
+; destroy (Player) occupy (int int) continents (Continent Continent Continent)
+[missions]
+0	0 0	9 5 3	Conquer Breckerfeld, Sprockhoevel and Wetter.
+0	0 0	8 2 1	Conquer Ennepetal, Hattingen and Witten.
+0	0 0	7 6 4	Conquer Schwelm, Gevelsberg and Herdecke.
+0	0 0	2 6 *	Conquer Hattingen, Gevelsberg and a third town (continent) of your choice.
+0	0 0	7 3 *	Conquer Schwelm, Wetter and a third town (continent) of your choice.
+0	0 0	5 4 *	Conquer Sprockhoevel, Herdecke and a third town (continent) of your choice.
+0	0 0	1 9 *	Conquer Witten, Breckerfeld and a third town (continent) of your choice.
+0	0 0	8 * *	Conquer Ennepetal and two other towns (continents) of your choice.
+0	14 3	0 0 0	Occupy 14 districts (countries) of your choice and occupy each with at least 3 armies.
+1	22 1	0 0 0	Destroy all of PLAYER1's TROOPS. If they are yours or they have already been destroyed by another player then your mission is: Occupy 22 districts (countries).
+2	22 1	0 0 0	Destroy all of PLAYER2's TROOPS. If they are yours or they have already been destroyed by another player then your mission is: Occupy 22 districts (countries).
+3	22 1	0 0 0	Destroy all of PLAYER3's TROOPS. If they are yours or they have already been destroyed by another player then your mission is: Occupy 22 districts (countries).
+4	22 1	0 0 0	Destroy all of PLAYER4's TROOPS. If they are yours or they have already been destroyed by another player then your mission is: Occupy 22 districts (countries).
+5	22 1	0 0 0	Destroy all of PLAYER5's TROOPS. If they are yours or they have already been destroyed by another player then your mission is: Occupy 22 districts (countries).
+6	22 1	0 0 0	Destroy all of PLAYER6's TROOPS. If they are yours or they have already been destroyed by another player then your mission is: Occupy 22 districts (countries).
