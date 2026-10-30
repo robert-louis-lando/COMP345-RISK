@@ -1,8 +1,8 @@
 # COMP345-RISK
 
-## Build and test the map component
+## Build and test the components
 
-Run commands from the repository root. You need CMake 3.16+ and a C++17 compiler. `ctest` runs every driver registered in `CMakeLists.txt`; currently that is `MapDriver`.
+Run commands from the repository root (`COMP345-RISK`). You need CMake 3.16+ and a C++17 compiler. CMake builds all five drivers. `ctest` runs `MapDriver`, `PlayerDriver`, `CardsDriver`, `OrdersDriver`, and the command-input unit tests. Run `GameEngineDriver` manually with console or file input.
 
 ### macOS (Terminal, default Makefiles generator)
 
@@ -36,25 +36,40 @@ ctest --test-dir build -C Debug -R '^map_driver$' --output-on-failure
 
 Visual Studio places executables under `build/Debug/` (or `build/Release/` if you use `--config Release` and `-C Release`). On macOS with the Xcode generator, also use `--config Debug` and `-C Debug`, and find the executable under `build/Debug/`.
 
-## Adding another component's driver
+## Run the other drivers
 
-Put your source files in your component directory and add an executable and test to the root `CMakeLists.txt`. For example, if the Player files live in `player/`:
+After building, run any driver directly:
 
-```cmake
-add_executable(PlayerDriver player/Player.cpp player/PlayerDriver.cpp)
-set_target_properties(PlayerDriver PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
-add_test(NAME player_driver COMMAND PlayerDriver)
+| Driver | macOS (Terminal) | Windows (PowerShell / Visual Studio) |
+| --- | --- | --- |
+| Player | `./build/PlayerDriver` | `& .\build\Debug\PlayerDriver.exe` |
+| Cards | `./build/CardsDriver` | `& .\build\Debug\CardsDriver.exe` |
+| Orders | `./build/OrdersDriver` | `& .\build\Debug\OrdersDriver.exe` |
+| Game Engine | `./build/GameEngineDriver` | `& .\build\Debug\GameEngineDriver.exe` |
+
+The Game Engine defaults to console input. Select the input source explicitly with:
+
+```sh
+./build/GameEngineDriver -console
+./build/GameEngineDriver -file commands.txt
 ```
 
-Include any other `.cpp` files your driver needs in `add_executable` (for example, `map/Map.cpp` if it calls map functions). Each driver needs its own executable because each has its own `main()`; do not add multiple driver files to one executable. Give each test a unique name.
+A command file contains one command per line, processed in order through `FileCommandProcessorAdapter` and `FileLineReader`. File EOF ends the program cleanly; rejected commands are recorded with an error effect and processing continues. Quote command-file paths containing spaces. Unknown flags or missing filenames print usage. In console mode, press **Ctrl+C** to stop immediately; `quit` exits normally when the engine is in the `Win` state.
 
-After editing `CMakeLists.txt`, configure and build again, then test your driver:
+The engine still performs state transitions, not the full map/player gameplay actions.
 
-| macOS (Terminal) | Windows (PowerShell / Visual Studio) |
-| --- | --- |
-| `cmake -S . -B build` | `cmake -S . -B build` |
-| `cmake --build build --target PlayerDriver` | `cmake --build build --config Debug --target PlayerDriver` |
-| `ctest --test-dir build -R '^player_driver$' --output-on-failure` | `ctest --test-dir build -C Debug -R '^player_driver$' --output-on-failure` |
-| `./build/PlayerDriver` | `& .\build\Debug\PlayerDriver.exe` |
+To build only one driver, use its target name, for example:
 
-Replace `PlayerDriver` and `player_driver` with your executable and test names. To run *all* registered driver tests, build all targets first and use the platform's full `ctest` command above.
+```sh
+cmake --build build --target PlayerDriver
+```
+
+For Visual Studio, also add `--config Debug`. To run one non-interactive driver's test, use its test name: `map_driver`, `player_driver`, `cards_driver`, `orders_driver`, or `command_input`:
+
+```sh
+ctest --test-dir build -R '^player_driver$' --output-on-failure
+```
+
+For Visual Studio, also add `-C Debug`.
+
+Each driver is a separate executable because each defines its own `main()`. New drivers must be added to `CMakeLists.txt` with their own executable target; only non-interactive drivers should be registered as unattended tests.
