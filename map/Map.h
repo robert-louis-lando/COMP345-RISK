@@ -93,6 +93,8 @@ public:
      *  @return False for an unknown territory ID or a self-border; true otherwise.
      */
     bool CreateAdjacency(int territoryId1, int territoryId2);
+    /** @brief Randomly assign all territories as evenly as possible among players. */
+    bool distributeTerritories(const std::vector<Player *> &players);
     /** @brief Check membership, whole-map connectivity, and continent subgraph connectivity.
      *  @return True if all checks pass; otherwise prints the failing check to std::cerr.
      */

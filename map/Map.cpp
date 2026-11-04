@@ -1,7 +1,10 @@
 #include "Map.h"
+#include "Player.h"
 #include <string>
 #include <vector>
 #include <iostream>
+#include <algorithm>
+#include <random>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -291,6 +294,36 @@ bool Map::CreateAdjacency(int territoryId1, int territoryId2)
 
     territory1->adjacentTerritories->push_back(territory2);
     territory2->adjacentTerritories->push_back(territory1);
+    return true;
+}
+//return false if something is wrong, or else it distribute the territories of the map to the players
+bool Map::distributeTerritories(const std::vector<Player *> &players)
+{   
+    //making sure there are players and territories
+    if (players.empty() || Territories->empty())
+    {
+        return false;
+    }
+    //ensure no player pointer is null
+    for (Player *player : players)
+    {
+        if (player == nullptr)
+        {
+            return false;
+        }
+    }
+    //shuffles the territories
+    std::vector<Territory *> shuffledTerritories = *Territories;
+    std::mt19937 randomGenerator(std::random_device{}());
+    std::shuffle(shuffledTerritories.begin(), shuffledTerritories.end(), randomGenerator);
+    //looping through the territories and assigning them to a player and a player to a territory
+    for (std::size_t i = 0; i < shuffledTerritories.size(); ++i)
+    {
+        Player *player = players[i % players.size()];
+        Territory *territory = shuffledTerritories[i];
+        territory->owner = player;
+        player->addTerritory(territory);
+    }
     return true;
 }
 

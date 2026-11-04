@@ -3,6 +3,9 @@
 #include <string>
 #include <iostream>
 #include "CommandProcessing.h"
+#include "Cards.h"
+#include "Map.h"
+#include "Player.h"
 
 class Phase;
 class State;
@@ -26,6 +29,16 @@ class GameEngine{
         //checks whether the current state accepts a command without changing state
         //optionally writes a rejection error; success clears it without claiming execution
         bool canExecute(const std::string& command, const std::string& argument = "", std::string* error = nullptr) const;
+        //startup
+        void startupPhase();
+        //loadmap
+        bool loadMap(const std::string& path, std::string& error);
+        //validate if map is not null and delegate validation
+        bool validateMap() const;
+        //does check and add player to the vector of players
+        void addPlayer(const std::string& name);
+        //does some actions before transitioning to the play phase
+        void gameStart();
         //getters
         const std::string* getCurrentPhase() const;
         const std::string* getCurrentState() const;
@@ -40,6 +53,12 @@ class GameEngine{
         //contains both current phase and state
         Phase* currentPhase;
         State* currentState;
+        //deck of cards
+        Deck* deck;
+        //map of the game
+        Map* map;
+        //list of players
+        std::vector<Player*> players;
 
         //command processor to read commands from the console or from a file
         CommandProcessor* commandProcessor;
