@@ -203,23 +203,27 @@ void GameEngine::gameStart(){
         std::cout << "Reinforcement pool: " << *player->getReinforcementPool() << '\n';
     }
 }
+//called to start the game
 void GameEngine::startupPhase() {
      namespace fs = std::filesystem;
 
     std::cout << "Available maps:\n";
     std::error_code ec;
+    //recursively gets all files and their path extensions so we can list all the maps in the maps/
     for (const auto& entry : fs::recursive_directory_iterator("maps", ec)) {
         if (entry.is_regular_file() && entry.path().extension() == ".map") {
             std::cout << "  " << entry.path().generic_string() << '\n';
         }
     }
+    //command line input
     std::string input;
 
     while (currentPhase != nullptr &&
            *currentPhase->getName() == "Startup" &&
            running) {
         std::cout << "Enter startup command: ";
-
+        
+        //cmd input
         if (!std::getline(std::cin, input)) {
             return; // Stop cleanly at EOF
         }
@@ -228,6 +232,7 @@ void GameEngine::startupPhase() {
         Command command(&input, &effect);
 
         try {
+            //calls executeCommand and delegates the command inputted
             executeCommand(command);
         }
         catch (const std::exception&) {

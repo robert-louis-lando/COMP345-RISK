@@ -110,12 +110,13 @@ void Player::addTerritoryToAttack(Territory* territory) {
 void Player::addCard(Card* card) {
     hand->push_back(card);
 }
-
+// getter for reinforcementPool
 int* Player::getReinforcementPool() const {
     return reinforcementPool;
 }
-
+// setter for reinforcementPool
 void Player::setReinforcementPool(int troops) {
+    //no less than 0 troops
     if (troops < 0) {
         throw std::invalid_argument("Reinforcement pool cannot be negative");
     }
@@ -143,13 +144,9 @@ std::ostream& operator<<(std::ostream& out, const Player& player) {
     out << "Territories to defend: " << player.territories->size() << '\n';
     out << "Territories to attack: "
         << player.territoriesToAttack->size() << '\n';
-    out << "Hand (" << player.hand->size() << " cards):";
-    for (const Card* card : *player.hand) {
-        out << ' ' << card->getType();
-    }
-    out << '\n';
+    out << "Cards: " << player.hand->size() << '\n';
     out << "Orders:\n";
-
+    //prints all the card types in the hand
     for (Order* order : *player.orders) {
         out << "  " << *order << '\n';
     }

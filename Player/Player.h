@@ -67,7 +67,7 @@ public:
 
     //add a card to player
     void addCard(Card* card);
-
+    //getter and setter
     int* getReinforcementPool() const;
 
     void setReinforcementPool(int troops);
