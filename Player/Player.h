@@ -47,6 +47,7 @@ private:
     std::vector<Territory*>* territoriesToAttack;
     std::vector<Card*>* hand;
     std::vector<Order*>* orders;
+    int* reinforcementPool;
 
 public:
 //constructor, creates the player
@@ -66,6 +67,10 @@ public:
 
     //add a card to player
     void addCard(Card* card);
+
+    int* getReinforcementPool() const;
+
+    void setReinforcementPool(int troops);
 
     //return player list of territories to defend
     std::vector<Territory*> toDefend() const;

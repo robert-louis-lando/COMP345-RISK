@@ -1,4 +1,6 @@
 #include "Player.h"
+#include "Cards.h"
+#include <stdexcept>
 
 //constructor, create an order
 Order::Order(const std::string& description) {
@@ -32,6 +34,7 @@ std::ostream& operator<<(std::ostream& out, const Order& order) {
 //constructor for player
 Player::Player(const std::string& name) {
     this->name = new std::string(name);
+    reinforcementPool = new int(0);
     territories = new std::vector<Territory*>();
     territoriesToAttack = new std::vector<Territory*>();
     hand = new std::vector<Card*>();
@@ -41,6 +44,7 @@ Player::Player(const std::string& name) {
 //copy constructor, copy of a player
 Player::Player(const Player& other) {
     name = new std::string(*other.name);
+    reinforcementPool = new int(*other.reinforcementPool);
     territories = new std::vector<Territory*>(*other.territories);
     territoriesToAttack =
         new std::vector<Territory*>(*other.territoriesToAttack);
@@ -56,6 +60,7 @@ Player::Player(const Player& other) {
 Player& Player::operator=(const Player& other) {
     if (this != &other) {
         *name = *other.name;
+        *reinforcementPool = *other.reinforcementPool;
         *territories = *other.territories;
         *territoriesToAttack = *other.territoriesToAttack;
         *hand = *other.hand;
@@ -82,6 +87,7 @@ Player::~Player() {
     delete territories;
     delete territoriesToAttack;
     delete hand;
+    delete reinforcementPool;
 
     for (Order* order : *orders) {
         delete order;
@@ -105,6 +111,17 @@ void Player::addCard(Card* card) {
     hand->push_back(card);
 }
 
+int* Player::getReinforcementPool() const {
+    return reinforcementPool;
+}
+
+void Player::setReinforcementPool(int troops) {
+    if (troops < 0) {
+        throw std::invalid_argument("Reinforcement pool cannot be negative");
+    }
+    *reinforcementPool = troops;
+}
+
 //return player list of territories to defend
 std::vector<Territory*> Player::toDefend() const {
     return *territories;
@@ -126,7 +143,11 @@ std::ostream& operator<<(std::ostream& out, const Player& player) {
     out << "Territories to defend: " << player.territories->size() << '\n';
     out << "Territories to attack: "
         << player.territoriesToAttack->size() << '\n';
-    out << "Cards: " << player.hand->size() << '\n';
+    out << "Hand (" << player.hand->size() << " cards):";
+    for (const Card* card : *player.hand) {
+        out << ' ' << card->getType();
+    }
+    out << '\n';
     out << "Orders:\n";
 
     for (Order* order : *player.orders) {

@@ -1,10 +1,14 @@
 #include "GameEngine.h"
 #include "CommandProcessing.h"
+#include "Map.h"
 #include <cstdlib>
 #include <stdexcept>
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <algorithm>
+#include <random>
+#include <filesystem>
 using namespace std;
 
 namespace {
@@ -60,6 +64,8 @@ GameEngine& GameEngine::getInstance(){
 GameEngine :: GameEngine(){
     this->currentPhase = new Startup();
     this->currentState = new Start();
+    this->deck = new Deck(10, 10, 10, 10, 10);
+    this->map = new Map();
     this->commandProcessor = new CommandProcessor();
     this->running = true;
 }
@@ -67,6 +73,11 @@ GameEngine :: GameEngine(){
 GameEngine :: ~GameEngine(){
     delete currentPhase;
     delete currentState;
+    delete deck;
+    delete map;
+    for(Player* player : players){
+        delete player;
+    }
     delete commandProcessor;
 }
 //custom output stream to display information a certain way of the game engine
@@ -136,6 +147,96 @@ const std::string* GameEngine :: getCurrentPhase() const{
 const std::string* GameEngine :: getCurrentState() const{
     return currentState->getName();
 }
+//boolean function to check and delegate if we load the map properly
+bool GameEngine::loadMap(const string& path, string& error){
+    Map loadedMap;
+    MapLoader loader;
+    if(!loader.loadMap(path, loadedMap, error)){
+        return false;
+    }
+    //if we can load the map then we assign it to the game engine's pointer to a Map
+    *map = loadedMap;
+    return true;
+}
+//another boolean method which checks if the map pointer isn't null and delegate the validation to the map->validate()
+bool GameEngine::validateMap() const{
+    return map != nullptr && map->validate();
+}
+
+//add a player to the gameengine vector
+void GameEngine::addPlayer(const string& name){
+    //check if the name is empty
+    if(name.find_first_not_of(" \t\n\r\f\v") == string::npos){
+        throw invalid_argument("Player name cannot be empty");
+    }
+    //max 6 players
+    if(players.size() >= 6){
+        throw invalid_argument("A game can have at most 6 players");
+    }
+    //add player to vector
+    players.push_back(new Player(name));
+}
+
+//gamestart is called before transitioning to the Play phase
+void GameEngine::gameStart(){
+    //should have at least 2 players to start the game
+    if(players.size() < 2){
+        throw invalid_argument("At least 2 players are required to start");
+    }
+    //setting a random generator to mix the player list and decide the order of the turns.
+    std::mt19937 randomGenerator(std::random_device{}());
+    std::shuffle(players.begin(), players.end(), randomGenerator);
+    std::cout << "Randomized player order selected.\n";
+
+    //distributes the territories to the players ensuring that there is at most 1 difference in their numbers.
+    if(map == nullptr || !map->distributeTerritories(players)){
+        throw invalid_argument("Could not distribute territories to players");
+    }
+    std::cout << "Territories fairly distributed (player counts differ by at most one).\n";
+    //goes through all players to assign their 50 troops and to make each player draw 2 cards
+    for(Player* player : players){
+        player->setReinforcementPool(50);
+        player->addCard(&deck->draw());
+        player->addCard(&deck->draw());
+        std::cout << "Each player received 50 armies and draw 2 initial cards.\n";
+        std::cout << *player;
+        std::cout << "Reinforcement pool: " << *player->getReinforcementPool() << '\n';
+    }
+}
+void GameEngine::startupPhase() {
+     namespace fs = std::filesystem;
+
+    std::cout << "Available maps:\n";
+    std::error_code ec;
+    for (const auto& entry : fs::recursive_directory_iterator("maps", ec)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".map") {
+            std::cout << "  " << entry.path().generic_string() << '\n';
+        }
+    }
+    std::string input;
+
+    while (currentPhase != nullptr &&
+           *currentPhase->getName() == "Startup" &&
+           running) {
+        std::cout << "Enter startup command: ";
+
+        if (!std::getline(std::cin, input)) {
+            return; // Stop cleanly at EOF
+        }
+
+        std::string effect;
+        Command command(&input, &effect);
+
+        try {
+            executeCommand(command);
+        }
+        catch (const std::exception&) {
+            // executeCommand saved the error in the command's effect
+        }
+
+        std::cout << command;
+    }}
+
 //setters
 void GameEngine :: setPhase(Phase* phase){
     if(phase == nullptr){
@@ -278,6 +379,10 @@ void Start :: transition(const string* command, GameEngine* gameEngine, const st
     if(command == nullptr || gameEngine == nullptr || !canExecute(*command, argument)){
         throw invalid_argument("Wrong command for this state");
     }
+    std::string error;
+    if (!gameEngine->loadMap(argument, error)) {
+        throw std::invalid_argument("Could not load map: " + error);
+        }
     gameEngine->setState(new MapLoaded());
 }
 //from here on out these are all implementations of a state pattern
@@ -304,9 +409,17 @@ void MapLoaded :: transition(const string* command, GameEngine* gameEngine, cons
         throw invalid_argument("Wrong command for this state");
     }
     if(command->compare("loadmap") == 0){
+        std::string error;
+        if (!gameEngine->loadMap(argument, error)) {
+            throw std::invalid_argument("Could not load map: " + error);
+            }
         gameEngine->setState(new MapLoaded());
     }
     else{
+        std::string error;
+        if (!gameEngine->validateMap()) {
+            throw std::invalid_argument("Could not validate map: " + error);
+            }
         gameEngine->setState(new MapValidated());
     }
 }
@@ -332,6 +445,8 @@ void MapValidated :: transition(const string* command, GameEngine* gameEngine, c
     if(command == nullptr || gameEngine == nullptr || !canExecute(*command, argument)){
         throw invalid_argument("Wrong command for this state");
     }
+    std::string error;
+    gameEngine->addPlayer(argument);
     gameEngine->setState(new PlayersAdded());
 }
 
@@ -357,9 +472,11 @@ void PlayersAdded :: transition(const string* command, GameEngine* gameEngine, c
         throw invalid_argument("Wrong command for this state");
     }
     if(command->compare("addplayer") == 0){
+        gameEngine->addPlayer(argument);
         gameEngine->setState(new PlayersAdded());
     }
     else{
+        gameEngine->gameStart();
         gameEngine->setState(new AssignReinforcement());
         gameEngine->setPhase(new Play());
     }
