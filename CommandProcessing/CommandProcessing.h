@@ -44,10 +44,6 @@ public:
      */
     Command *getCommand();
     /** @brief Check command syntax and whether the current engine state accepts it.
-     *  @param command Complete command text; copied into the returned object.
-     *  @return A newly allocated Command with an empty effect or a validation error.
-     *  @note The caller owns this result until it is saved in the processor's history.
-     *        This method alone does not save or execute the command.
      */
     Command *validate(string &command);
 
@@ -143,8 +139,6 @@ public:
     /** @brief Construct a reader without an open file. */
     FileLineReader();
     /** @brief Open a command file for sequential reading from its beginning.
-     *  @throws std::invalid_argument If fileName is empty.
-     *  @throws std::runtime_error If the file cannot be opened.
      */
     explicit FileLineReader(const string &fileName);
     /** @brief Reopen the source file independently, preserving its position and EOF status.
@@ -159,18 +153,9 @@ public:
     ~FileLineReader();
 
     /** @brief Read the next line, accepting LF and CRLF line endings.
-     *  @return A newly allocated string owned by the caller, or nullptr at EOF.
-     *  @throws std::runtime_error If no file is open, reading fails, or position lookup fails.
-     *  @note Blank lines and a final line without a newline are returned normally.
-     *        Repeated calls after EOF continue returning nullptr.
      */
     string *readLineFromFile();
     /** @brief Open a different file if needed, then read its next line.
-     *  @param fileName Borrowed path pointer; the reader copies its value when opening.
-     *  @return A newly allocated string owned by the caller, or nullptr at EOF.
-     *  @throws std::invalid_argument If fileName is null or an empty new path is supplied.
-     *  @throws std::runtime_error If opening or reading fails.
-     *  @note Reusing the same path continues reading; it does not restart the file.
      */
     string *readLineFromFile(string *fileName);
 
