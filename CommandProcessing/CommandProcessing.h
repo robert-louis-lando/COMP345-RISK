@@ -49,7 +49,7 @@ public:
      *  @note The caller owns this result until it is saved in the processor's history.
      *        This method alone does not save or execute the command.
      */
-    Command *validateCommand(string &command);
+    Command *validate(string &command);
 
 private:
     /** @brief Read one complete console line, leaving validation to getCommand().

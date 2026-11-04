@@ -8,7 +8,7 @@ using namespace std;
 
 CommandProcessor::CommandProcessor() = default;
 
-//History copies own independent commands and effects.
+// History copies own independent commands and effects.
 CommandProcessor::CommandProcessor(const CommandProcessor &commandProcessor)
 {
     try
@@ -51,19 +51,19 @@ CommandProcessor::~CommandProcessor()
         delete command;
 }
 
-//Both console and file sources use this exact save/validate path.
+// Both console and file sources use this exact save/validate path.
 Command *CommandProcessor::getCommand()
 {
     unique_ptr<string> text(readCommand());
     if (!text)
         return nullptr;
 
-    unique_ptr<Command> command(validateCommand(*text));
+    unique_ptr<Command> command(validate(*text));
     saveCommand(*command);
     return command.release();
 }
 
-//Read one whole line, including invalid commands, so rejection effects can be saved.
+// Read one whole line, including invalid commands, so rejection effects can be saved.
 string *CommandProcessor::readCommand()
 {
     string input;
@@ -75,13 +75,13 @@ string *CommandProcessor::readCommand()
         if (cin.bad())
             throw runtime_error("Failed to read console input");
 
-        //Retain the requested interactive retry behavior after terminal EOF.
+        // Retain the requested interactive retry behavior after terminal EOF.
         cin.clear();
         cout << "Input ended. Please try again.\n";
     }
 }
 
-Command *CommandProcessor::validateCommand(string &command)
+Command *CommandProcessor::validate(string &command)
 {
     istringstream stream(command);
     string name;
@@ -186,7 +186,7 @@ FileCommandProcessorAdapter::~FileCommandProcessorAdapter()
     delete fileLineReader;
 }
 
-//Adapt FileLineReader to the base processor's private virtual input method.
+// Adapt FileLineReader to the base processor's private virtual input method.
 string *FileCommandProcessorAdapter::readCommand()
 {
     return fileLineReader->readLineFromFile();
@@ -205,7 +205,7 @@ FileLineReader::FileLineReader(const string &fileName) : FileLineReader()
     open(fileName);
 }
 
-//Streams are not copyable: reopen the file and seek to the saved byte position.
+// Streams are not copyable: reopen the file and seek to the saved byte position.
 FileLineReader::FileLineReader(const FileLineReader &other) : FileLineReader()
 {
     if (other.input->is_open())
@@ -234,11 +234,11 @@ FileLineReader &FileLineReader::operator=(const FileLineReader &other)
 
 FileLineReader::~FileLineReader()
 {
-    delete input; //ifstream closes the file automatically
+    delete input; // ifstream closes the file automatically
     delete fileName;
 }
 
-//Commit a new file only after it opens successfully.
+// Commit a new file only after it opens successfully.
 void FileLineReader::open(const string &name)
 {
     if (name.empty())
@@ -273,7 +273,7 @@ string *FileLineReader::readLineFromFile()
         return nullptr;
     }
 
-    if (input->eof()) //the final line has no terminating newline
+    if (input->eof()) // the final line has no terminating newline
         exhausted = true;
     else
     {
@@ -283,7 +283,7 @@ string *FileLineReader::readLineFromFile()
         position = static_cast<std::streamoff>(next);
     }
     if (!line.empty() && line.back() == '\r')
-        line.pop_back(); //accept CRLF files on every platform
+        line.pop_back(); // accept CRLF files on every platform
     return new string(line);
 }
 
