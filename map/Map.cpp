@@ -16,12 +16,28 @@ int Continent::getId() const
     return *id;
 }
 
+int Continent::getBonusArmyCount() const
+{
+    return *bonusArmyCount;
+}
+
+const std::vector<Territory *> &Continent::getTerritories() const
+{
+    return *territories;
+}
+
+void Continent::addTerritory(Territory *territory)
+{
+    territories->push_back(territory);
+}
+
 Continent::Continent(const std::string &name, int id, int bonusArmyCount, const std::string &color)
 {
     this->name = new std::string(name);
     this->id = new int(id);
     this->bonusArmyCount = new int(bonusArmyCount);
     this->color = new std::string(color);
+    this->territories = new std::vector<Territory *>();
 }
 
 Continent::Continent(const Continent &other)
@@ -30,6 +46,7 @@ Continent::Continent(const Continent &other)
     this->id = new int(*other.id);
     this->bonusArmyCount = new int(*other.bonusArmyCount);
     this->color = new std::string(*other.color);
+    this->territories = new std::vector<Territory *>(*other.territories);
 }
 
 Continent &Continent::operator=(const Continent &other)
@@ -40,6 +57,7 @@ Continent &Continent::operator=(const Continent &other)
         *id = *other.id;
         *bonusArmyCount = *other.bonusArmyCount;
         *color = *other.color;
+        *territories = *other.territories;
     }
     return *this;
 }
@@ -50,6 +68,7 @@ Continent::~Continent()
     delete id;
     delete bonusArmyCount;
     delete color;
+    delete territories;
 }
 
 std::ostream &operator<<(std::ostream &out, const Continent &continent)
@@ -61,6 +80,11 @@ std::ostream &operator<<(std::ostream &out, const Continent &continent)
 int Territory::getId() const
 {
     return *id;
+}
+
+const Continent *Territory::getContinent() const
+{
+    return continent;
 }
 
 Territory::Territory(const std::string &name, int x, int y, int id, int armyCount, Continent *continent)
@@ -155,6 +179,16 @@ Map::Map(const Map &other)
         for (const Territory *adjacent : *original->adjacentTerritories)
         {
             copy->adjacentTerritories->push_back(territoryCopies.at(adjacent));
+        }
+    }
+
+    for (const Continent *original : *other.Continents)
+    {
+        Continent *copy = continentCopies.at(original);
+        copy->territories->clear();
+        for (const Territory *territory : *original->territories)
+        {
+            copy->territories->push_back(territoryCopies.at(territory));
         }
     }
 }
@@ -252,6 +286,7 @@ Territory *Map::CreateTerritory(const std::string &name, int x, int y, int id, i
 
     Territory *territory = new Territory(name, x, y, id, armyCount, continent);
     Territories->push_back(territory);
+    continent->addTerritory(territory);
     return territory;
 }
 
@@ -325,6 +360,16 @@ bool Map::distributeTerritories(const std::vector<Player *> &players)
         player->addTerritory(territory);
     }
     return true;
+}
+
+const std::vector<Territory *> &Map::getTerritories() const
+{
+    return *Territories;
+}
+
+const std::vector<Continent *> &Map::getContinents() const
+{
+    return *Continents;
 }
 
 MapLoader::MapLoader() = default;

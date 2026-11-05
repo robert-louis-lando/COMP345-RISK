@@ -39,6 +39,8 @@ class GameEngine{
         void addPlayer(const std::string& name);
         //does some actions before transitioning to the play phase
         void gameStart();
+        //adds each player's territory and continent-control reinforcements
+        void reinforcementPhase();
         //getters
         const std::string* getCurrentPhase() const;
         const std::string* getCurrentState() const;

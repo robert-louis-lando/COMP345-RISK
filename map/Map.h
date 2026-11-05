@@ -5,6 +5,8 @@
 #include <vector>
 #include <iosfwd>
 
+class Territory;
+
 /** @brief A group of territories with a reinforcement bonus and display color. */
 class Continent
 {
@@ -13,6 +15,7 @@ private:
     int *id;             // owns
     int *bonusArmyCount; // owns
     std::string *color; // owns
+    std::vector<Territory *> *territories; // owns the vector, not territory pointers
 
 public:
     /** @brief Create a continent, copying all metadata into owned storage. */
@@ -27,6 +30,14 @@ public:
     friend std::ostream &operator<<(std::ostream &out, const Continent &continent);
     /** @brief Return this continent's numeric ID. */
     int getId() const;
+    /** @brief Return this continent's reinforcement control bonus. */
+    int getBonusArmyCount() const;
+    /** @brief Return the territories belonging to this continent. */
+    const std::vector<Territory *> &getTerritories() const;
+
+private:
+    friend class Map;
+    void addTerritory(Territory *territory);
 };
 
 // Player is defined by the separate Player component; territories only borrow its pointer.
@@ -60,6 +71,8 @@ public:
     friend class Map;
     /** @brief Return this territory's numeric ID. */
     int getId() const;
+    /** @brief Return the continent this territory belongs to. */
+    const Continent *getContinent() const;
 };
 
 /** @brief An owned territory graph with undirected borders and continent membership. */
@@ -95,6 +108,10 @@ public:
     bool CreateAdjacency(int territoryId1, int territoryId2);
     /** @brief Randomly assign all territories as evenly as possible among players. */
     bool distributeTerritories(const std::vector<Player *> &players);
+    /** @brief Return the map's territories without transferring ownership. */
+    const std::vector<Territory *> &getTerritories() const;
+    /** @brief Return the map's continents without transferring ownership. */
+    const std::vector<Continent *> &getContinents() const;
     /** @brief Check membership, whole-map connectivity, and continent subgraph connectivity.
      *  @return True if all checks pass; otherwise prints the failing check to std::cerr.
      */

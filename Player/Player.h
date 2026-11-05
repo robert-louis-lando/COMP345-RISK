@@ -68,6 +68,7 @@ public:
     //add a card to player
     void addCard(Card* card);
     //getter and setter
+    const std::string* getName() const;
     int* getReinforcementPool() const;
 
     void setReinforcementPool(int troops);
