@@ -71,6 +71,12 @@ public:
     friend class Map;
     /** @brief Return this territory's numeric ID. */
     int getId() const;
+    /** @brief Return this territory's name. */
+    const std::string &getName() const;
+    /** @brief Return this territory's current army count. */
+    int getArmyCount() const;
+    /** @brief Return this territory's adjacent territories. */
+    const std::vector<Territory *> &getAdjacentTerritories() const;
     /** @brief Return the continent this territory belongs to. */
     const Continent *getContinent() const;
 };

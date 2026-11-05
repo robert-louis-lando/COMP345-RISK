@@ -6,6 +6,7 @@
 #include <utility>
 using namespace std;
 
+// Construct an empty command processor.
 CommandProcessor::CommandProcessor() = default;
 
 // History copies own independent commands and effects.
@@ -28,6 +29,7 @@ CommandProcessor::CommandProcessor(const CommandProcessor &commandProcessor)
     }
 }
 
+// Replace the command history with an independent copy.
 CommandProcessor &CommandProcessor::operator=(const CommandProcessor &commandProcessor)
 {
     if (this != &commandProcessor)
@@ -38,6 +40,7 @@ CommandProcessor &CommandProcessor::operator=(const CommandProcessor &commandPro
     return *this;
 }
 
+// Print the command processor's saved history.
 std::ostream &operator<<(std::ostream &os, const CommandProcessor &commandProcessor)
 {
     for (const Command *command : commandProcessor.commands)
@@ -45,6 +48,7 @@ std::ostream &operator<<(std::ostream &os, const CommandProcessor &commandProces
     return os;
 }
 
+// Delete all commands owned by the processor.
 CommandProcessor::~CommandProcessor()
 {
     for (Command *command : commands)
@@ -106,6 +110,7 @@ void CommandProcessor::saveCommand(Command &command)
     commands.push_back(&command);
 }
 
+// Construct an empty command.
 Command::Command() : Command(nullptr, nullptr) {}
 
 Command::Command(string *command, string *effect)
@@ -116,8 +121,10 @@ Command::Command(string *command, string *effect)
     this->effect = outcome.release();
 }
 
+// Deep-copy a command and its effect.
 Command::Command(const Command &command) : Command(command.command, command.effect) {}
 
+// Replace this command with an independent copy.
 Command &Command::operator=(const Command &command)
 {
     if (this != &command)
@@ -129,39 +136,47 @@ Command &Command::operator=(const Command &command)
     return *this;
 }
 
+// Release the command text and effect.
 Command::~Command()
 {
     delete command;
     delete effect;
 }
 
+// Print a command and its current effect.
 std::ostream &operator<<(std::ostream &os, const Command &command)
 {
     os << "Command: " << *command.command << ", Effect: " << *command.effect << '\n';
     return os;
 }
 
+// Return the stored command text.
 string *Command::getCommand()
 {
     return command;
 }
 
+// Return the stored command effect.
 string *Command::getEffect()
 {
     return effect;
 }
 
+// Store a command rejection or execution effect.
 void Command::saveEffect(string &effect)
 {
     *this->effect = effect;
 }
 
+// Construct a file-backed command processor.
 FileCommandProcessorAdapter::FileCommandProcessorAdapter(const string &fileName)
     : fileLineReader(new FileLineReader(fileName)) {}
 
+// Deep-copy a file-backed command processor and its reader position.
 FileCommandProcessorAdapter::FileCommandProcessorAdapter(const FileCommandProcessorAdapter &other)
     : CommandProcessor(other), fileLineReader(new FileLineReader(*other.fileLineReader)) {}
 
+// Replace the adapter history and reader with independent copies.
 FileCommandProcessorAdapter &FileCommandProcessorAdapter::operator=(const FileCommandProcessorAdapter &other)
 {
     if (this != &other)
@@ -174,6 +189,7 @@ FileCommandProcessorAdapter &FileCommandProcessorAdapter::operator=(const FileCo
     return *this;
 }
 
+// Print the adapter history and reader status.
 std::ostream &operator<<(std::ostream &os, const FileCommandProcessorAdapter &adapter)
 {
     os << static_cast<const CommandProcessor &>(adapter)
@@ -181,17 +197,20 @@ std::ostream &operator<<(std::ostream &os, const FileCommandProcessorAdapter &ad
     return os;
 }
 
+// Release the file reader owned by the adapter.
 FileCommandProcessorAdapter::~FileCommandProcessorAdapter()
 {
     delete fileLineReader;
 }
 
 // Adapt FileLineReader to the base processor's private virtual input method.
+// Read the next command line from the adapter's file.
 string *FileCommandProcessorAdapter::readCommand()
 {
     return fileLineReader->readLineFromFile();
 }
 
+// Construct an unopened file reader.
 FileLineReader::FileLineReader() : fileName(nullptr), input(nullptr), position(0), exhausted(false)
 {
     unique_ptr<string> name(new string());
@@ -200,6 +219,7 @@ FileLineReader::FileLineReader() : fileName(nullptr), input(nullptr), position(0
     input = stream.release();
 }
 
+// Construct and open a file reader.
 FileLineReader::FileLineReader(const string &fileName) : FileLineReader()
 {
     open(fileName);
@@ -219,6 +239,7 @@ FileLineReader::FileLineReader(const FileLineReader &other) : FileLineReader()
     exhausted = other.exhausted;
 }
 
+// Replace this reader with an independent copy.
 FileLineReader &FileLineReader::operator=(const FileLineReader &other)
 {
     if (this != &other)
@@ -232,6 +253,7 @@ FileLineReader &FileLineReader::operator=(const FileLineReader &other)
     return *this;
 }
 
+// Close the file and release reader storage.
 FileLineReader::~FileLineReader()
 {
     delete input; // ifstream closes the file automatically
@@ -257,6 +279,7 @@ void FileLineReader::open(const string &name)
     exhausted = false;
 }
 
+// Read the next line from the open command file.
 string *FileLineReader::readLineFromFile()
 {
     if (!input->is_open())
@@ -287,6 +310,7 @@ string *FileLineReader::readLineFromFile()
     return new string(line);
 }
 
+// Open the requested file when needed, then read its next line.
 string *FileLineReader::readLineFromFile(string *name)
 {
     if (name == nullptr)
@@ -296,6 +320,7 @@ string *FileLineReader::readLineFromFile(string *name)
     return readLineFromFile();
 }
 
+// Print the reader's file and current position.
 std::ostream &operator<<(std::ostream &os, const FileLineReader &reader)
 {
     os << *reader.fileName << " (offset " << reader.position

@@ -2,6 +2,7 @@
 #include <exception>
 #include <iostream>
 
+// Exercise the GameEngine startup phase and initial state.
 int main() {
     try {
         GameEngine& gameEngine = GameEngine::getInstance();

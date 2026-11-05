@@ -11,26 +11,31 @@
 #include <fstream>
 #include <sstream>
 
+// Return the continent's numeric identifier.
 int Continent::getId() const
 {
     return *id;
 }
 
+// Return the continent's reinforcement bonus.
 int Continent::getBonusArmyCount() const
 {
     return *bonusArmyCount;
 }
 
+// Return the territories assigned to the continent.
 const std::vector<Territory *> &Continent::getTerritories() const
 {
     return *territories;
 }
 
+// Add a territory to the continent's membership list.
 void Continent::addTerritory(Territory *territory)
 {
     territories->push_back(territory);
 }
 
+// Construct a continent with copied metadata and an empty membership list.
 Continent::Continent(const std::string &name, int id, int bonusArmyCount, const std::string &color)
 {
     this->name = new std::string(name);
@@ -40,6 +45,7 @@ Continent::Continent(const std::string &name, int id, int bonusArmyCount, const 
     this->territories = new std::vector<Territory *>();
 }
 
+// Deep-copy a continent's metadata and membership list.
 Continent::Continent(const Continent &other)
 {
     this->name = new std::string(*other.name);
@@ -49,6 +55,7 @@ Continent::Continent(const Continent &other)
     this->territories = new std::vector<Territory *>(*other.territories);
 }
 
+// Replace this continent's metadata and membership list with a copy.
 Continent &Continent::operator=(const Continent &other)
 {
     if (this != &other)
@@ -62,6 +69,7 @@ Continent &Continent::operator=(const Continent &other)
     return *this;
 }
 
+// Release the continent's owned data.
 Continent::~Continent()
 {
     delete name;
@@ -71,22 +79,44 @@ Continent::~Continent()
     delete territories;
 }
 
+// Print the continent's identifying information.
 std::ostream &operator<<(std::ostream &out, const Continent &continent)
 {
     out << "Continent: " << *continent.name << " (ID: " << *continent.id << ", Bonus Armies: " << *continent.bonusArmyCount << ", Color: " << *continent.color << ")";
     return out;
 }
 
+// Return the territory's numeric identifier.
 int Territory::getId() const
 {
     return *id;
 }
 
+// Return the territory's name.
+const std::string &Territory::getName() const
+{
+    return *name;
+}
+
+// Return the territory's current army count.
+int Territory::getArmyCount() const
+{
+    return *armyCount;
+}
+
+// Return the territory's adjacent territories.
+const std::vector<Territory *> &Territory::getAdjacentTerritories() const
+{
+    return *adjacentTerritories;
+}
+
+// Return the territory's containing continent.
 const Continent *Territory::getContinent() const
 {
     return continent;
 }
 
+// Construct a territory with copied metadata and no adjacent territories.
 Territory::Territory(const std::string &name, int x, int y, int id, int armyCount, Continent *continent)
 {
     this->name = new std::string(name);
@@ -99,6 +129,7 @@ Territory::Territory(const std::string &name, int x, int y, int id, int armyCoun
     this->continent = continent;
 }
 
+// Deep-copy a territory's owned data and borrowed links.
 Territory::Territory(const Territory &other)
 {
     this->name = new std::string(*other.name);
@@ -111,6 +142,7 @@ Territory::Territory(const Territory &other)
     this->continent = other.continent;
 }
 
+// Replace this territory's state with a copy of another territory.
 Territory &Territory::operator=(const Territory &other)
 {
     if (this != &other)
@@ -127,6 +159,7 @@ Territory &Territory::operator=(const Territory &other)
     return *this;
 }
 
+// Release the territory's owned data.
 Territory::~Territory()
 {
     delete name;
@@ -137,18 +170,21 @@ Territory::~Territory()
     delete armyCount;
 }
 
+// Print the territory's identifying information.
 std::ostream &operator<<(std::ostream &out, const Territory &territory)
 {
     out << "Territory: " << *territory.name << " (ID: " << *territory.id << ", Coordinates: (" << *territory.x << ", " << *territory.y << "), Army Count: " << *territory.armyCount << ")";
     return out;
 }
 
+// Construct an empty map.
 Map::Map()
 {
     Territories = new std::vector<Territory *>();
     Continents = new std::vector<Continent *>();
 }
 
+// Deep-copy a map and rebind all graph links to copied objects.
 Map::Map(const Map &other)
 {
     Territories = new std::vector<Territory *>();
@@ -193,6 +229,7 @@ Map::Map(const Map &other)
     }
 }
 
+// Replace this map with an independent deep copy.
 Map &Map::operator=(const Map &other)
 {
     if (this != &other)
@@ -204,6 +241,7 @@ Map &Map::operator=(const Map &other)
     return *this;
 }
 
+// Release all territories, continents, and collection storage.
 Map::~Map()
 {
     for (Territory *territory : *Territories)
@@ -219,6 +257,7 @@ Map::~Map()
     delete Continents;
 }
 
+// Print all continents and territories in the map.
 std::ostream &operator<<(std::ostream &out, const Map &map)
 {
     out << "Map:\n";
@@ -235,6 +274,7 @@ std::ostream &operator<<(std::ostream &out, const Map &map)
     return out;
 }
 
+// Add a uniquely identified continent to the map.
 Continent *Map::CreateContinent(const std::string &name, int id, int bonusArmyCount, const std::string &color)
 {
     if (bonusArmyCount <= 0)
@@ -257,6 +297,7 @@ Continent *Map::CreateContinent(const std::string &name, int id, int bonusArmyCo
     return continent;
 }
 
+// Add a territory and register it with its continent.
 Territory *Map::CreateTerritory(const std::string &name, int x, int y, int id, int armyCount, int continentId)
 {
     for (const Territory *territory : *Territories)
@@ -290,6 +331,7 @@ Territory *Map::CreateTerritory(const std::string &name, int x, int y, int id, i
     return territory;
 }
 
+// Add an undirected adjacency between two existing territories.
 bool Map::CreateAdjacency(int territoryId1, int territoryId2)
 {
     if (territoryId1 == territoryId2)
@@ -362,26 +404,33 @@ bool Map::distributeTerritories(const std::vector<Player *> &players)
     return true;
 }
 
+// Return the map's territory collection.
 const std::vector<Territory *> &Map::getTerritories() const
 {
     return *Territories;
 }
 
+// Return the map's continent collection.
 const std::vector<Continent *> &Map::getContinents() const
 {
     return *Continents;
 }
 
+// Construct a stateless map loader.
 MapLoader::MapLoader() = default;
+// Copy a stateless map loader.
 MapLoader::MapLoader(const MapLoader &other) = default;
+// Assign a stateless map loader.
 MapLoader &MapLoader::operator=(const MapLoader &other) = default;
 
+// Print a short description of the map loader.
 std::ostream &operator<<(std::ostream &out, const MapLoader &)
 {
     out << "MapLoader\n";
     return out;
 }
 
+// Parse a Domination-format map file into the output map.
 bool MapLoader::loadMap(const std::string &path, Map &output, std::string &error) const
 {
     std::ifstream input(path);

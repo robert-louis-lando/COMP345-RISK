@@ -8,81 +8,72 @@ Rquirements to fulfill for players:
 -ToAttackIO (return a list of terr. that are to beattacked
 - issueOrder() (creates order object and puts it in players list of orders)*/
 
-
 #ifndef PLAYER_H
 #define PLAYER_H
 
 #include <iostream>
 #include <string>
+#include <unordered_set>
 #include <vector>
+
+#include "../Orders/Orders.h"
 
 class Territory;
 class Card;
+class Deck;
 
-//dummy class just for testing, we will replace it wth the real order.h
-class Order {
+// Class for players in the game, each players
+class Player
+{
 private:
-    std::string* description;
+    std::string *name;
+    std::vector<Territory *> *territories;
+    std::unordered_set<Territory *> *ownedTerritories;
+    std::vector<Territory *> *territoriesToAttack;
+    std::vector<Card *> *hand;
+    OrdersList *orders;
+    int *reinforcementPool;
+
+    Card *removeCard(const std::string &cardType);
 
 public:
-//constructor to create order
-    Order(const std::string& description);
-    //Copy constructor, create a deep copy of an order with a copy of a description
-    Order(const Order& other);
-
-
-    Order& operator=(const Order& other);
-    //destructor, release memory
-    ~Order();
-
-    //output description to an output stream
-    friend std::ostream& operator<<(std::ostream& out, const Order& order);
-};
-
-//Class for players in the game, each players 
-class Player {
-private:
-    std::string* name;
-    std::vector<Territory*>* territories;
-    std::vector<Territory*>* territoriesToAttack;
-    std::vector<Card*>* hand;
-    std::vector<Order*>* orders;
-    int* reinforcementPool;
-
-public:
-//constructor, creates the player
-    Player(const std::string& name);
+    // constructor, creates the player
+    Player(const std::string &name);
     // copy constructor deep copy of another player
-    Player(const Player& other);
+    Player(const Player &other);
 
-     // Copy player data into 2nd player
-    Player& operator=(const Player& other);
-    //release memory
+    // Copy player data into 2nd player
+    Player &operator=(const Player &other);
+    // release memory
     ~Player();
 
-        //add territory to player's owned territories
-    void addTerritory(Territory* territory);
-    //add territory to  player's territories to attack
-    void addTerritoryToAttack(Territory* territory);
+    // add territory to player's owned territories
+    void addTerritory(Territory *territory);
+    // remove a territory from the player's owned territories
+    void removeTerritory(Territory *territory);
+    // add territory to  player's territories to attack
+    void addTerritoryToAttack(Territory *territory);
 
-    //add a card to player
-    void addCard(Card* card);
-    //getter and setter
-    const std::string* getName() const;
-    int* getReinforcementPool() const;
+    // add a card to player
+    void addCard(Card *card);
+    // getter and setter
+    const std::string *getName() const;
+    int *getReinforcementPool() const;
 
     void setReinforcementPool(int troops);
 
-    //return player list of territories to defend
-    std::vector<Territory*> toDefend() const;
+    // return player list of territories to defend
+    std::vector<Territory *> toDefend() const;
 
-    //return player's list of territories to attack
-    std::vector<Territory*> toAttack() const;
+    // return player's list of territories to attack
+    std::vector<Territory *> toAttack() const;
 
-    //create an order and add to player
-    void issueOrder(const std::string& description);
-    //output player information and orders
-    friend std::ostream& operator<<(std::ostream& out, const Player& player);
+    // Issue one order and return whether another order may be issued.
+    void issueOrder(Deck *deck, std::vector<Player *> players);
+    // returns orders
+    OrdersList *getOrders() const;
+    // output player information and orders
+    friend std::ostream &operator<<(std::ostream &out, const Player &player);
 };
 
 #endif

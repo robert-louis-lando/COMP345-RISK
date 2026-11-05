@@ -14,6 +14,7 @@ using namespace std;
 
 namespace
 {
+    // Check whether a command argument contains non-whitespace text.
     bool hasArgument(const string &argument)
     {
         return argument.find_first_not_of(" \t\n\r\f\v") != string::npos;
@@ -77,7 +78,7 @@ GameEngine::GameEngine()
 {
     this->currentPhase = new Startup();
     this->currentState = new Start();
-    this->deck = new Deck(10, 10, 10, 10, 10);
+    this->deck = new Deck(10, 0, 10, 10, 10);
     this->map = new Map();
     this->commandProcessor = new CommandProcessor();
     this->running = true;
@@ -148,11 +149,13 @@ void GameEngine::executeCommand(Command &command)
     }
 }
 
+// Report whether the command-processing loop should continue.
 bool GameEngine::isRunning() const
 {
     return running;
 }
 
+// Validate a command against the current engine state without changing it.
 bool GameEngine::canExecute(const string &command, const string &argument, string *error) const
 {
     if (!running)
@@ -166,10 +169,12 @@ bool GameEngine::canExecute(const string &command, const string &argument, strin
     return currentState->canExecute(command, argument, error);
 }
 // getters
+// Return the current phase name.
 const std::string *GameEngine::getCurrentPhase() const
 {
     return currentPhase->getName();
 }
+// Return the current state name.
 const std::string *GameEngine::getCurrentState() const
 {
     return currentState->getName();
@@ -241,16 +246,13 @@ void GameEngine::gameStart()
     }
 }
 
+// Calculate and assign reinforcements for every player.
 void GameEngine::reinforcementPhase()
 {
     if (map == nullptr)
     {
         throw invalid_argument("Cannot calculate reinforcements without a map");
     }
-
-    std::cout << "\n"
-              << "Reinforcement received:"
-              << "\n\n";
 
     for (Player *player : players)
     {
@@ -288,15 +290,158 @@ void GameEngine::reinforcementPhase()
         }
 
         const int previousPool = *player->getReinforcementPool();
-        std::cout << "Player: " << *player->getName() << '\n';
-        std::cout << "Reinforcement pool before: " << previousPool << '\n';
-        std::cout << "Reinforcements added: " << reinforcements << '\n';
 
         player->setReinforcementPool(
             previousPool + reinforcements);
+    }
+}
 
-        std::cout << "New reinforcement pool: "
-                  << *player->getReinforcementPool() << "\n\n";
+// Issue order loop for each player
+// Ask each player to create orders for the current turn.
+void GameEngine::issueOrdersPhase()
+{
+    for (Player *player : players)
+    {
+        if (player == nullptr)
+        {
+            throw invalid_argument("Cannot issue orders for a null player");
+        }
+        player->issueOrder(deck, players);
+    }
+}
+
+// Execute orders
+// Execute and remove deploy orders, then execute remaining orders.
+void GameEngine::executeOrdersPhase()
+{
+    for (Player *player : players)
+    {
+        if (player == nullptr)
+        {
+            throw invalid_argument("Cannot execute orders for a null player");
+        }
+
+        OrdersList *orders = player->getOrders();
+        if (orders == nullptr)
+        {
+            continue;
+        }
+
+        while (orders->size() > 0)
+        {
+            Order *order = orders->get(0);
+            if (order == nullptr || order->getType() != "Deploy")
+            {
+                break;
+            }
+
+            if (order->validate())
+            {
+                order->execute();
+            }
+            else
+            {
+                std::cout << "Invalid deploy order for player "
+                          << *player->getName() << ".\n";
+            }
+
+            orders->remove(0);
+        }
+    }
+
+    bool ordersRemaining = true;
+    while (ordersRemaining)
+    {
+        ordersRemaining = false;
+        for (Player *player : players)
+        {
+            if (player == nullptr)
+            {
+                throw invalid_argument("Cannot execute orders for a null player");
+            }
+
+            OrdersList *orders = player->getOrders();
+            if (orders == nullptr || orders->size() == 0)
+            {
+                continue;
+            }
+
+            Order *order = orders->get(0);
+            if (order == nullptr)
+            {
+                orders->remove(0);
+                ordersRemaining = true;
+                continue;
+            }
+
+            if (order->validate())
+            {
+                order->execute();
+            }
+            else
+            {
+                std::cout << "Invalid order for player "
+                          << *player->getName() << ".\n";
+            }
+
+            orders->remove(0);
+            ordersRemaining = true;
+        }
+    }
+}
+
+// Remove eliminated players and detect a winner.
+bool GameEngine::checkPlayPhaseResult()
+{
+    for (auto player = players.begin(); player != players.end();)
+    {
+        if (*player == nullptr || (*player)->toDefend().empty())
+        {
+            if (*player != nullptr)
+            {
+                std::cout << "Player " << *(*player)->getName()
+                          << " has been eliminated.\n";
+                delete *player;
+            }
+            player = players.erase(player);
+        }
+        else
+        {
+            ++player;
+        }
+    }
+
+    if (players.size() == 1 && map != nullptr &&
+        players.front()->toDefend().size() == map->getTerritories().size())
+    {
+        std::cout << "Player " << *players.front()->getName()
+                  << " owns all territories and wins the game.\n";
+        setState(new Win());
+        return true;
+    }
+
+    return players.empty();
+}
+
+// Play phase
+void GameEngine::playPhase()
+{
+    while (running && currentPhase != nullptr &&
+           *currentPhase->getName() == "Play")
+    {
+        setState(new AssignReinforcement());
+        reinforcementPhase();
+
+        setState(new IssueOrders());
+        issueOrdersPhase();
+
+        setState(new ExecuteOrders());
+        executeOrdersPhase();
+
+        if (checkPlayPhaseResult())
+        {
+            return;
+        }
     }
 }
 
@@ -336,6 +481,12 @@ void GameEngine::startupPhase()
         {
             // calls executeCommand and delegates the command inputted
             executeCommand(command);
+
+            if (currentPhase != nullptr &&
+                *currentPhase->getName() == "Play")
+            {
+                playPhase();
+            }
         }
         catch (const std::exception &)
         {
@@ -347,6 +498,7 @@ void GameEngine::startupPhase()
 }
 
 // setters
+// Replace the current phase after validating the supplied pointer.
 void GameEngine::setPhase(Phase *phase)
 {
     if (phase == nullptr)
@@ -359,6 +511,7 @@ void GameEngine::setPhase(Phase *phase)
         this->currentPhase = phase;
     }
 }
+// Replace the current state after validating the supplied pointer.
 void GameEngine::setState(State *state)
 {
     if (state == nullptr)
@@ -435,6 +588,7 @@ std::ostream &operator<<(std::ostream &os, const Startup &startup)
 // same as startup class
 Play::Play() : Phase("Play") {}
 Play::Play(const Play &play) : Phase(play) {}
+// Copy the name of another Play phase.
 Play &Play::operator=(const Play &play)
 {
     if (this != &play)
@@ -443,6 +597,7 @@ Play &Play::operator=(const Play &play)
     }
     return *this;
 }
+// Print the Play phase name.
 std::ostream &operator<<(std::ostream &os, const Play &play)
 {
     os << *play.getName();
@@ -450,6 +605,7 @@ std::ostream &operator<<(std::ostream &os, const Play &play)
 }
 
 // State default constructor
+// Construct an unnamed state.
 State::State() : name(new string()) {}
 // destructor deallocates the string pointer of name
 State::~State()
@@ -463,6 +619,7 @@ State::State(const State &state)
     this->name = (state.name != nullptr) ? new std::string(*state.name) : nullptr;
 }
 // Copy the state's name into owned storage without allocating a temporary string.
+// Construct a state with the supplied name.
 State::State(const std::string &name) : name(new string(name)) {}
 // assignment operator checks if the pointer passed is nullptr if not then release the memory for the previous string* and then assign the passed state name pointer to a newly created string pointer
 State &State::operator=(const State &state)
@@ -476,12 +633,14 @@ State &State::operator=(const State &state)
     return *this;
 }
 // output stream prints the states name
+// Print the state name.
 std::ostream &operator<<(std::ostream &os, const State &state)
 {
     os << *state.getName();
     return os;
 }
 // getter
+// Return the state's name.
 const string *State::getName() const
 {
     return this->name;
@@ -543,11 +702,13 @@ std::ostream &operator<<(std::ostream &os, const MapLoaded &mapLoaded)
     os << *mapLoaded.getName();
     return os;
 }
+// Validate commands accepted after a map has been loaded.
 bool MapLoaded::canExecute(const string &command, const string &argument, string *effect) const
 {
     bool valid = (command == "loadmap" && hasArgument(argument)) || command == "validatemap";
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
+// Apply a valid command transition from the map-loaded state.
 void MapLoaded::transition(const string *command, GameEngine *gameEngine, const string &argument)
 {
     if (command == nullptr || gameEngine == nullptr || !canExecute(*command, argument))
@@ -590,11 +751,13 @@ std::ostream &operator<<(std::ostream &os, const MapValidated &mapValidated)
     os << *mapValidated.getName();
     return os;
 }
+// Validate commands accepted after map validation.
 bool MapValidated::canExecute(const string &command, const string &argument, string *effect) const
 {
     bool valid = command == "addplayer" && hasArgument(argument);
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
+// Apply a valid command transition from the map-validated state.
 void MapValidated::transition(const string *command, GameEngine *gameEngine, const string &argument)
 {
     if (command == nullptr || gameEngine == nullptr || !canExecute(*command, argument))
@@ -622,11 +785,13 @@ std::ostream &operator<<(std::ostream &os, const PlayersAdded &playersAdded)
     os << *playersAdded.getName();
     return os;
 }
+// Validate commands accepted while players are being added.
 bool PlayersAdded::canExecute(const string &command, const string &argument, string *effect) const
 {
     bool valid = (command == "addplayer" && hasArgument(argument)) || command == "gamestart";
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
+// Apply a valid command transition from the players-added state.
 void PlayersAdded::transition(const string *command, GameEngine *gameEngine, const string &argument)
 {
     if (command == nullptr || gameEngine == nullptr || !canExecute(*command, argument))
@@ -662,11 +827,13 @@ std::ostream &operator<<(std::ostream &os, const AssignReinforcement &assignRein
     os << *assignReinforcement.getName();
     return os;
 }
+// Validate commands accepted during reinforcement assignment.
 bool AssignReinforcement::canExecute(const string &command, const string &argument, string *effect) const
 {
     bool valid = command == "issueorder";
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
+// Apply a valid transition out of reinforcement assignment.
 void AssignReinforcement::transition(const string *command, GameEngine *gameEngine, const string &argument)
 {
     if (command == nullptr || gameEngine == nullptr || !canExecute(*command, argument))
@@ -674,6 +841,7 @@ void AssignReinforcement::transition(const string *command, GameEngine *gameEngi
         throw invalid_argument("Wrong command for this state");
     }
     gameEngine->reinforcementPhase();
+    gameEngine->issueOrdersPhase();
     gameEngine->setState(new IssueOrders());
 }
 
@@ -693,25 +861,20 @@ std::ostream &operator<<(std::ostream &os, const IssueOrders &issueOrders)
     os << *issueOrders.getName();
     return os;
 }
+// Validate commands accepted while orders are being issued.
 bool IssueOrders::canExecute(const string &command, const string &argument, string *effect) const
 {
-    bool valid = command == "issueorder" || command == "endissueorders";
+    bool valid = command == "endissueorders";
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
+// Apply a valid transition out of order issuance.
 void IssueOrders::transition(const string *command, GameEngine *gameEngine, const string &argument)
 {
     if (command == nullptr || gameEngine == nullptr || !canExecute(*command, argument))
     {
         throw invalid_argument("Wrong command for this state");
     }
-    if (command->compare("issueorder") == 0)
-    {
-        gameEngine->setState(new IssueOrders());
-    }
-    else
-    {
-        gameEngine->setState(new ExecuteOrders());
-    }
+    gameEngine->setState(new ExecuteOrders());
 }
 
 // ExecuteOrders
@@ -730,11 +893,13 @@ std::ostream &operator<<(std::ostream &os, const ExecuteOrders &executeOrders)
     os << *executeOrders.getName();
     return os;
 }
+// Validate commands accepted while orders are being executed.
 bool ExecuteOrders::canExecute(const string &command, const string &argument, string *effect) const
 {
     bool valid = command == "execorder" || command == "endexecorders" || command == "win";
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
+// Apply a valid transition out of order execution.
 void ExecuteOrders::transition(const string *command, GameEngine *gameEngine, const string &argument)
 {
     if (command == nullptr || gameEngine == nullptr || !canExecute(*command, argument))
@@ -743,6 +908,7 @@ void ExecuteOrders::transition(const string *command, GameEngine *gameEngine, co
     }
     if (command->compare("execorder") == 0)
     {
+        gameEngine->executeOrdersPhase();
         gameEngine->setState(new ExecuteOrders());
     }
     else if (command->compare("endexecorders") == 0)
@@ -771,11 +937,13 @@ std::ostream &operator<<(std::ostream &os, const Win &win)
     os << *win.getName();
     return os;
 }
+// Validate commands accepted after a winner is found.
 bool Win::canExecute(const string &command, const string &argument, string *effect) const
 {
     bool valid = command == "quit" || command == "replay";
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
+// Apply a valid command transition from the win state.
 void Win::transition(const string *command, GameEngine *gameEngine, const string &argument)
 {
     if (command == nullptr || gameEngine == nullptr || !canExecute(*command, argument))
