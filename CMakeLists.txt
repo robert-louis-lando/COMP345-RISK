@@ -3,9 +3,23 @@ project(COMP345_RISK LANGUAGES CXX)
 
 # Each component has its own executable because every driver defines main().
 add_executable(MapDriver map/Map.cpp map/MapDriver.cpp map/Map.h)
-add_executable(PlayerDriver Player/Player.cpp Player/PlayerDriver.cpp Player/Player.h)
+add_executable(PlayerDriver
+    Player/Player.cpp Player/PlayerDriver.cpp Player/Player.h
+    Orders/Orders.cpp Orders/Orders.h Cards/Cards.cpp Cards/Cards.h
+    map/Map.cpp map/Map.h)
+target_include_directories(PlayerDriver PRIVATE Player Orders Cards map)
 add_executable(CardsDriver Cards/Cards.cpp Cards/CardsDriver.cpp Cards/Cards.h)
-add_executable(OrdersDriver Orders/Orders.cpp Orders/OrdersDriver.cpp Orders/Orders.h)
+add_executable(OrdersDriver
+    Orders/Orders.cpp Orders/OrdersDriver.cpp Orders/Orders.h
+    Player/Player.cpp Player/Player.h Cards/Cards.cpp Cards/Cards.h
+    map/Map.cpp map/Map.h)
+target_include_directories(OrdersDriver PRIVATE Orders Player Cards map)
+add_executable(OrderDriver2
+    Orders/Orders.cpp Orders/OrderDriver2.cpp Orders/Orders.h
+    Player/Player.cpp Player/Player.h Cards/Cards.cpp Cards/Cards.h
+    map/Map.cpp map/Map.h GameEngine/GameEngine.cpp GameEngine/GameEngine.h
+    CommandProcessing/CommandProcessing.cpp CommandProcessing/CommandProcessing.h)
+target_include_directories(OrderDriver2 PRIVATE Orders Player Cards map GameEngine CommandProcessing)
 add_executable(GameEngineDriver
     GameEngine/GameEngine.cpp
     GameEngine/GameEngineDrive.cpp
@@ -18,6 +32,8 @@ add_executable(GameEngineDriver
     map/Map.h
     Player/Player.cpp
     Player/Player.h
+    Orders/Orders.cpp
+    Orders/Orders.h
 )
 target_include_directories(GameEngineDriver PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
@@ -39,6 +55,8 @@ add_executable(GameEngineDriverPart2
     map/Map.h
     Player/Player.cpp
     Player/Player.h
+    Orders/Orders.cpp
+    Orders/Orders.h
 )
 target_include_directories(GameEngineDriverPart2 PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
@@ -55,6 +73,7 @@ add_executable(CommandInputTests
     Cards/Cards.cpp
     map/Map.cpp
     Player/Player.cpp
+    Orders/Orders.cpp
 )
 target_include_directories(CommandInputTests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
@@ -64,7 +83,7 @@ target_include_directories(CommandInputTests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/Player"
 )
 
-foreach(driver IN ITEMS MapDriver PlayerDriver CardsDriver OrdersDriver GameEngineDriver GameEngineDriverPart2 CommandInputTests)
+foreach(driver IN ITEMS MapDriver PlayerDriver CardsDriver OrdersDriver OrderDriver2 GameEngineDriver GameEngineDriverPart2 CommandInputTests)
     set_target_properties(${driver} PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED YES
@@ -80,6 +99,11 @@ add_test(NAME map_driver COMMAND MapDriver)
 add_test(NAME player_driver COMMAND PlayerDriver)
 add_test(NAME cards_driver COMMAND CardsDriver)
 add_test(NAME orders_driver COMMAND OrdersDriver)
+add_test(NAME order_driver2 COMMAND OrderDriver2)
+set_tests_properties(orders_driver PROPERTIES
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+set_tests_properties(order_driver2 PROPERTIES
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 add_test(NAME command_input COMMAND CommandInputTests)
 # GameEngineDriver is interactive, so it must not run unattended through CTest.
 

@@ -16,6 +16,8 @@ Player::Player(const std::string &name)
     territoriesToAttack = new std::vector<Territory *>();
     hand = new std::vector<Card *>();
     orders = new OrdersList();
+    negotiatedPlayers = new std::vector<Player *>();
+    conqueredTerritoryThisTurn = new bool(false);
 }
 
 // copy constructor, copy of a player
@@ -27,8 +29,11 @@ Player::Player(const Player &other)
     ownedTerritories = new std::unordered_set<Territory *>(*other.ownedTerritories);
     territoriesToAttack =
         new std::vector<Territory *>(*other.territoriesToAttack);
-    hand = new std::vector<Card *>(*other.hand);
+    hand = new std::vector<Card *>();
+    for (const Card *card : *other.hand) hand->push_back(card == nullptr ? nullptr : new Card(*card));
     orders = new OrdersList(*other.orders);
+    negotiatedPlayers = new std::vector<Player *>(*other.negotiatedPlayers);
+    conqueredTerritoryThisTurn = new bool(*other.conqueredTerritoryThisTurn);
 }
 
 // replace player with other player data
@@ -41,8 +46,12 @@ Player &Player::operator=(const Player &other)
         *territories = *other.territories;
         *ownedTerritories = *other.ownedTerritories;
         *territoriesToAttack = *other.territoriesToAttack;
-        *hand = *other.hand;
+        for (Card *card : *hand) delete card;
+        hand->clear();
+        for (const Card *card : *other.hand) hand->push_back(card == nullptr ? nullptr : new Card(*card));
         *orders = *other.orders;
+        *negotiatedPlayers = *other.negotiatedPlayers;
+        *conqueredTerritoryThisTurn = *other.conqueredTerritoryThisTurn;
     }
 
     return *this;
@@ -55,9 +64,12 @@ Player::~Player()
     delete territories;
     delete ownedTerritories;
     delete territoriesToAttack;
+    for (Card *card : *hand) delete card;
     delete hand;
     delete reinforcementPool;
     delete orders;
+    delete negotiatedPlayers;
+    delete conqueredTerritoryThisTurn;
 }
 
 // add territory to owned territories
@@ -69,6 +81,7 @@ void Player::addTerritory(Territory *territory)
     }
     territories->push_back(territory);
     ownedTerritories->insert(territory);
+    territory->setOwner(this);
 }
 
 // Remove a territory from both the owned set and ordered list.
@@ -84,6 +97,29 @@ void Player::removeTerritory(Territory *territory)
         territories->end());
 }
 
+// Add a unique temporary non-aggression partner.
+void Player::negotiateWith(Player *player)
+{
+    if (player != nullptr && player != this && !isNegotiatedWith(player))
+        negotiatedPlayers->push_back(player);
+}
+
+// Check whether this player has a non-aggression agreement with another.
+bool Player::isNegotiatedWith(const Player *player) const
+{
+    return std::find(negotiatedPlayers->begin(), negotiatedPlayers->end(), player) != negotiatedPlayers->end();
+}
+
+// Clear temporary agreements at the beginning of the next execution phase.
+void Player::clearNegotiations() { negotiatedPlayers->clear(); }
+
+// Record a successful territory capture during this turn.
+void Player::markTerritoryConquered() { *conqueredTerritoryThisTurn = true; }
+// Report whether a territory was captured this turn.
+bool Player::hasConqueredTerritoryThisTurn() const { return *conqueredTerritoryThisTurn; }
+// Reset the conquest marker for the next turn.
+void Player::clearConquestFlag() { *conqueredTerritoryThisTurn = false; }
+
 // add territory to the list of territories they can attack
 void Player::addTerritoryToAttack(Territory *territory)
 {
@@ -95,6 +131,9 @@ void Player::addCard(Card *card)
 {
     hand->push_back(card);
 }
+
+// Report the current hand size for game logic and demonstration drivers.
+int Player::getHandSize() const { return static_cast<int>(hand->size()); }
 
 // Remove and return the first card matching the requested type.
 Card *Player::removeCard(const std::string &cardType)
@@ -172,6 +211,7 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
               << "Deploy all your reinforcements:"
               << "\n";
     std::unordered_map<std::string, int> reinforcementsByTerritory;
+    int pendingDeployments = 0;
     std::cout << "Territories to defend: ";
     const vector<Territory *> defend = toDefend();
     const auto printDefend = [&reinforcementsByTerritory, &defend]()
@@ -199,10 +239,10 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
 
     printDefend();
     std::cout << '\n';
-    while (*reinforcementPool > 0)
+    while (*reinforcementPool - pendingDeployments > 0)
     {
         std::cout << "Reinforcement pool: "
-                  << *reinforcementPool << '\n'
+                  << (*reinforcementPool - pendingDeployments) << '\n'
                   << "Enter the territory name and number of reinforcements "
                   << "to deploy (for example, Canada 3): ";
 
@@ -219,18 +259,16 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
         if (!(command >> territoryName >> nArmies) ||
             (command >> extraInput) ||
             nArmies <= 0 ||
-            nArmies > *reinforcementPool)
+            nArmies > *reinforcementPool - pendingDeployments)
         {
             std::cout << "Invalid deployment. Enter a territory and a positive "
                       << "number no greater than the reinforcement pool.\n";
             continue;
         }
         orders->add(
-            new Deploy(*name, territoryName, nArmies));
+            new Deploy(this, territoryName, nArmies));
         reinforcementsByTerritory[territoryName] += nArmies;
-
-        setReinforcementPool(
-            *reinforcementPool - nArmies);
+        pendingDeployments += nArmies;
     }
 
     std::cout << "\n"
@@ -288,7 +326,7 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
         }
 
         orders->add(
-            new Advance(*name, fromTerritory, toTerritory, nArmies));
+            new Advance(this, fromTerritory, toTerritory, nArmies));
         reinforcementsByTerritory[fromTerritory] -= nArmies;
     }
 
@@ -323,6 +361,7 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
             else
             {
                 deck->returnCard(*card);
+                delete card;
                 if (cardType == "bomb")
                 {
                     std::cout << "\nTerritory to bomb: \n";
@@ -345,7 +384,7 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
                         throw invalid_argument("Unable to read bomb target");
                     }
 
-                    orders->add(new Bomb(*name, targetTerritory));
+                    orders->add(new Bomb(this, targetTerritory));
                 }
                 else if (cardType == "blockade")
                 {
@@ -362,7 +401,7 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
                             "Unable to read blockade target");
                     }
 
-                    orders->add(new Blockade(*name, targetTerritory));
+                    orders->add(new Blockade(this, targetTerritory));
                 }
                 else if (cardType == "airlift")
                 {
@@ -394,7 +433,7 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
                     }
 
                     orders->add(new Airlift(
-                        *name,
+                        this,
                         sourceTerritory,
                         targetTerritory,
                         nArmies));
@@ -421,7 +460,10 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
                             "Unable to read negotiation target");
                     }
 
-                    orders->add(new Negotiate(*name, targetPlayer));
+                    Player *target = nullptr;
+                    for (Player *candidate : players)
+                        if (candidate != nullptr && *candidate->getName() == targetPlayer) target = candidate;
+                    orders->add(new Negotiate(this, target));
                 }
                 else
                 {
@@ -430,6 +472,12 @@ void Player::issueOrder(Deck *deck, std::vector<Player *> players)
             }
         }
     }
+}
+
+// Queue an order created by this player for the game engine to execute.
+void Player::issueOrder(Order *order)
+{
+    orders->add(order);
 }
 
 // Return order list

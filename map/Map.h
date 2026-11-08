@@ -75,6 +75,12 @@ public:
     const std::string &getName() const;
     /** @brief Return this territory's current army count. */
     int getArmyCount() const;
+    /** @brief Return the player who currently owns this territory, or nullptr. */
+    Player *getOwner() const;
+    /** @brief Set the current army count, limiting negative values to zero. */
+    void setArmyCount(int count);
+    /** @brief Change the borrowed owner pointer. */
+    void setOwner(Player *player);
     /** @brief Return this territory's adjacent territories. */
     const std::vector<Territory *> &getAdjacentTerritories() const;
     /** @brief Return the continent this territory belongs to. */

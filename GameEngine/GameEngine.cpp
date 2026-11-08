@@ -238,8 +238,8 @@ void GameEngine::gameStart()
     for (Player *player : players)
     {
         player->setReinforcementPool(50);
-        player->addCard(&deck->draw());
-        player->addCard(&deck->draw());
+        player->addCard(new Card(deck->draw()));
+        player->addCard(new Card(deck->draw()));
         std::cout << "Each player received 50 armies and draw 2 initial cards.\n";
         std::cout << *player;
         std::cout << "Reinforcement pool: " << *player->getReinforcementPool() << '\n';
@@ -315,6 +315,11 @@ void GameEngine::issueOrdersPhase()
 void GameEngine::executeOrdersPhase()
 {
     for (Player *player : players)
+        if (player != nullptr) {
+            player->clearNegotiations();
+            player->clearConquestFlag();
+        }
+    for (Player *player : players)
     {
         if (player == nullptr)
         {
@@ -388,7 +393,23 @@ void GameEngine::executeOrdersPhase()
             ordersRemaining = true;
         }
     }
+
+    // A player receives one card after conquering at least one territory this turn.
+    for (Player *player : players) {
+        if (player == nullptr || !player->hasConqueredTerritoryThisTurn()) continue;
+        try {
+            player->addCard(new Card(deck->draw()));
+        } catch (const std::out_of_range &) {
+            // An exhausted deck cannot provide a conquest reward.
+        }
+    }
 }
+
+// Return the engine-owned map without transferring ownership.
+Map *GameEngine::getMap() const { return map; }
+
+// Return the engine-owned player list without transferring ownership.
+const std::vector<Player *> &GameEngine::getPlayers() const { return players; }
 
 // Remove eliminated players and detect a winner.
 bool GameEngine::checkPlayPhaseResult()

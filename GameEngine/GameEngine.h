@@ -46,6 +46,9 @@ public:
     void issueOrdersPhase();
     // executeorders
     void executeOrdersPhase();
+    // Expose the current game objects for drivers and state inspection.
+    Map *getMap() const;
+    const std::vector<Player *> &getPlayers() const;
     // repeatedly runs the Play phase turn cycle
     void playPhase();
     // removes eliminated players and detects the game winner

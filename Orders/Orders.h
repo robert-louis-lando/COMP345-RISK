@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+class Player;
+
 using namespace std;
 
 // Order is the base class for all orders.
@@ -18,6 +20,7 @@ class Order{
         string* playerName;
         string* effect;
         bool* executed;
+        Player* issuer; // borrowed player whose game state this order changes
 
     public:
         // Default constructor
@@ -25,6 +28,8 @@ class Order{
 
         // Constructor with a player name
         Order(const string& playerName);
+        // Construct an order connected to its issuing player.
+        Order(Player* player);
 
         // Copy constructor
         Order(const Order& other);
@@ -63,6 +68,7 @@ class Deploy : public Order {
 
         // Constructor
         Deploy(const string& playerName, const string& targetTerritory, int numberOfArmies);
+        Deploy(Player* player, const string& targetTerritory, int numberOfArmies);
 
         // Copy constructor
         Deploy(const Deploy& other);
@@ -103,6 +109,7 @@ class Advance : public Order{
 
         // Constructor
         Advance(const string& playerName, const string& sourceTerritory, const string& targetTerritory, int numberOfArmies);
+        Advance(Player* player, const string& sourceTerritory, const string& targetTerritory, int numberOfArmies);
 
         // Copy constructor
         Advance(const Advance& other);
@@ -141,6 +148,7 @@ class Bomb : public Order{
 
         // Constructor
         Bomb(const string& playerName, const string& targetTerritory);
+        Bomb(Player* player, const string& targetTerritory);
 
         // Copy constructor
         Bomb(const Bomb& other);
@@ -178,6 +186,7 @@ class Blockade : public Order{
 
         // Constructor
         Blockade(const string& playerName, const string& targetTerritory);
+        Blockade(Player* player, const string& targetTerritory);
 
         // Copy constructor
         Blockade(const Blockade& other);
@@ -217,6 +226,7 @@ class Airlift : public Order{
 
         // Constructor
         Airlift(const string& playerName, const string& sourceTerritory, const string& targetTerritory, int numberOfArmies);
+        Airlift(Player* player, const string& sourceTerritory, const string& targetTerritory, int numberOfArmies);
 
         // Copy constructor
         Airlift(const Airlift& other);
@@ -247,6 +257,7 @@ class Airlift : public Order{
 class Negotiate : public Order{
     private:
         string* targetPlayer;
+        Player* negotiatedTarget; // borrowed player object for the agreement
 
     public:
         // Default constructor
@@ -254,6 +265,8 @@ class Negotiate : public Order{
 
         // Constructor
         Negotiate(const string& playerName, const string& targetPlayer);
+        Negotiate(Player* player, const string& targetPlayer);
+        Negotiate(Player* player, Player* targetPlayer);
 
         // Copy constructor
         Negotiate(const Negotiate& other);
@@ -287,7 +300,7 @@ class Negotiate : public Order{
 
 class OrdersList{
     private:
-        vector<Order*> orders;
+        vector<Order*>* orders;
 
     public:
         // Default constructor

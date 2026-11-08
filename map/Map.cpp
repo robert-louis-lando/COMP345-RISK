@@ -104,6 +104,15 @@ int Territory::getArmyCount() const
     return *armyCount;
 }
 
+// Return the territory's current owner without transferring ownership.
+Player *Territory::getOwner() const { return owner; }
+
+// Replace the current army count, preventing negative armies.
+void Territory::setArmyCount(int count) { *armyCount = std::max(0, count); }
+
+// Reassign the territory to a player; the pointer is borrowed.
+void Territory::setOwner(Player *player) { owner = player; }
+
 // Return the territory's adjacent territories.
 const std::vector<Territory *> &Territory::getAdjacentTerritories() const
 {

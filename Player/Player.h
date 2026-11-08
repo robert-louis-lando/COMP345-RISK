@@ -33,6 +33,8 @@ private:
     std::vector<Card *> *hand;
     OrdersList *orders;
     int *reinforcementPool;
+    std::vector<Player *> *negotiatedPlayers;
+    bool *conqueredTerritoryThisTurn;
 
     Card *removeCard(const std::string &cardType);
 
@@ -51,11 +53,20 @@ public:
     void addTerritory(Territory *territory);
     // remove a territory from the player's owned territories
     void removeTerritory(Territory *territory);
+    // Track temporary non-aggression agreements for the current turn.
+    void negotiateWith(Player *player);
+    bool isNegotiatedWith(const Player *player) const;
+    void clearNegotiations();
+    void markTerritoryConquered();
+    bool hasConqueredTerritoryThisTurn() const;
+    void clearConquestFlag();
     // add territory to  player's territories to attack
     void addTerritoryToAttack(Territory *territory);
 
     // add a card to player
     void addCard(Card *card);
+    // Return the number of cards currently held by this player.
+    int getHandSize() const;
     // getter and setter
     const std::string *getName() const;
     int *getReinforcementPool() const;
@@ -70,6 +81,8 @@ public:
 
     // Issue one order and return whether another order may be issued.
     void issueOrder(Deck *deck, std::vector<Player *> players);
+    // Add an already constructed order to this player's execution queue.
+    void issueOrder(Order *order);
     // returns orders
     OrdersList *getOrders() const;
     // output player information and orders
