@@ -11,7 +11,7 @@ class Phase;
 class State;
 
 // Singleton GameEngine which controls the state of the game
-class GameEngine
+class GameEngine : public Subject, public ILoggable
 {
 public:
     // since its a singleton to always get the same instance
@@ -56,6 +56,10 @@ public:
     // getters
     const std::string *getCurrentPhase() const;
     const std::string *getCurrentState() const;
+
+    std::string stringToLog() const override;
+
+    
     // setters
     void setPhase(Phase *newPhase);
     void setState(State *newState);

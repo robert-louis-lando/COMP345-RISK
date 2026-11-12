@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "../LoggingObserver/LoggingObserver.h"  
+
 class Player;
 
 using namespace std;
@@ -15,7 +17,7 @@ using namespace std;
 // a description of its effect, and information about whether 
 // the order has been executed.
 
-class Order{
+class Order : public Subject, public ILoggable{ 
     protected:
         string* playerName;
         string* effect;
@@ -51,6 +53,8 @@ class Order{
 
         // Returns the type of the order
         virtual string getType() const = 0;
+
+        string stringToLog() const override; 
 
         // Stream insertion operator
         friend ostream& operator<<(ostream& out, const Order& order);
@@ -298,7 +302,7 @@ class Negotiate : public Order{
 // Orders are stored as pointers so that polymorphism can be used
 // The OrdersList is responsible for deleting the orders it owns
 
-class OrdersList{
+class OrdersList : public Subject, public ILoggable{ 
     private:
         vector<Order*>* orders;
 
@@ -330,6 +334,10 @@ class OrdersList{
         // Returns an order at a specified position
         Order* get(int index) const;
 
+
+        string stringToLog() const override; 
+
+        
         // Displays all orders in the list
         friend ostream& operator<<(ostream& out, const OrdersList& ordersList);
 };
