@@ -12,23 +12,59 @@ add_executable(GameEngineDriver
     GameEngine/GameEngine.h
     CommandProcessing/CommandProcessing.cpp
     CommandProcessing/CommandProcessing.h
+    Cards/Cards.cpp
+    Cards/Cards.h
+    map/Map.cpp
+    map/Map.h
+    Player/Player.cpp
+    Player/Player.h
 )
 target_include_directories(GameEngineDriver PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
     "${CMAKE_CURRENT_SOURCE_DIR}/CommandProcessing"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Cards"
+    "${CMAKE_CURRENT_SOURCE_DIR}/map"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Player"
+)
+
+add_executable(GameEngineDriverPart2
+    GameEngine/GameEngine.cpp
+    GameEngine/GameEngineDriverPart2.cpp
+    GameEngine/GameEngine.h
+    CommandProcessing/CommandProcessing.cpp
+    CommandProcessing/CommandProcessing.h
+    Cards/Cards.cpp
+    Cards/Cards.h
+    map/Map.cpp
+    map/Map.h
+    Player/Player.cpp
+    Player/Player.h
+)
+target_include_directories(GameEngineDriverPart2 PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
+    "${CMAKE_CURRENT_SOURCE_DIR}/CommandProcessing"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Cards"
+    "${CMAKE_CURRENT_SOURCE_DIR}/map"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Player"
 )
 
 add_executable(CommandInputTests
     tests/CommandInputTests.cpp
     GameEngine/GameEngine.cpp
     CommandProcessing/CommandProcessing.cpp
+    Cards/Cards.cpp
+    map/Map.cpp
+    Player/Player.cpp
 )
 target_include_directories(CommandInputTests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
     "${CMAKE_CURRENT_SOURCE_DIR}/CommandProcessing"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Cards"
+    "${CMAKE_CURRENT_SOURCE_DIR}/map"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Player"
 )
 
-foreach(driver IN ITEMS MapDriver PlayerDriver CardsDriver OrdersDriver GameEngineDriver CommandInputTests)
+foreach(driver IN ITEMS MapDriver PlayerDriver CardsDriver OrdersDriver GameEngineDriver GameEngineDriverPart2 CommandInputTests)
     set_target_properties(${driver} PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED YES
