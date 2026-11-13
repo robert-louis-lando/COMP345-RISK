@@ -6,19 +6,22 @@ add_executable(MapDriver map/Map.cpp map/MapDriver.cpp map/Map.h)
 add_executable(PlayerDriver
     Player/Player.cpp Player/PlayerDriver.cpp Player/Player.h
     Orders/Orders.cpp Orders/Orders.h Cards/Cards.cpp Cards/Cards.h
-    map/Map.cpp map/Map.h)
+    map/Map.cpp map/Map.h
+    LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h) 
 target_include_directories(PlayerDriver PRIVATE Player Orders Cards map)
 add_executable(CardsDriver Cards/Cards.cpp Cards/CardsDriver.cpp Cards/Cards.h)
 add_executable(OrdersDriver
     Orders/Orders.cpp Orders/OrdersDriver.cpp Orders/Orders.h
     Player/Player.cpp Player/Player.h Cards/Cards.cpp Cards/Cards.h
-    map/Map.cpp map/Map.h)
+    map/Map.cpp map/Map.h
+    LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h)
 target_include_directories(OrdersDriver PRIVATE Orders Player Cards map)
 add_executable(OrderDriver2
     Orders/Orders.cpp Orders/OrderDriver2.cpp Orders/Orders.h
     Player/Player.cpp Player/Player.h Cards/Cards.cpp Cards/Cards.h
     map/Map.cpp map/Map.h GameEngine/GameEngine.cpp GameEngine/GameEngine.h
-    CommandProcessing/CommandProcessing.cpp CommandProcessing/CommandProcessing.h)
+    CommandProcessing/CommandProcessing.cpp CommandProcessing/CommandProcessing.h
+    LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h)
 target_include_directories(OrderDriver2 PRIVATE Orders Player Cards map GameEngine CommandProcessing)
 add_executable(GameEngineDriver
     GameEngine/GameEngine.cpp
@@ -34,6 +37,8 @@ add_executable(GameEngineDriver
     Player/Player.h
     Orders/Orders.cpp
     Orders/Orders.h
+    LoggingObserver/LoggingObserver.cpp  
+    LoggingObserver/LoggingObserver.h  
 )
 target_include_directories(GameEngineDriver PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
@@ -57,6 +62,8 @@ add_executable(GameEngineDriverPart2
     Player/Player.h
     Orders/Orders.cpp
     Orders/Orders.h
+    LoggingObserver/LoggingObserver.cpp   
+    LoggingObserver/LoggingObserver.h  
 )
 target_include_directories(GameEngineDriverPart2 PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
@@ -74,6 +81,7 @@ add_executable(CommandInputTests
     map/Map.cpp
     Player/Player.cpp
     Orders/Orders.cpp
+    LoggingObserver/LoggingObserver.cpp
 )
 target_include_directories(CommandInputTests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
@@ -83,7 +91,35 @@ target_include_directories(CommandInputTests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/Player"
 )
 
-foreach(driver IN ITEMS MapDriver PlayerDriver CardsDriver OrdersDriver OrderDriver2 GameEngineDriver GameEngineDriverPart2 CommandInputTests)
+add_executable(LogObserverDriver
+    LoggingObserver/LoggingObserver.cpp
+    LoggingObserver/LogObserverDriver.cpp
+    LoggingObserver/LoggingObserver.h
+    GameEngine/GameEngine.cpp
+    GameEngine/GameEngine.h
+    CommandProcessing/CommandProcessing.cpp
+    CommandProcessing/CommandProcessing.h
+    Cards/Cards.cpp
+    Cards/Cards.h
+    map/Map.cpp
+    map/Map.h
+    Player/Player.cpp
+    Player/Player.h
+    Orders/Orders.cpp
+    Orders/Orders.h
+)
+target_include_directories(LogObserverDriver PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/LoggingObserver"
+    "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
+    "${CMAKE_CURRENT_SOURCE_DIR}/CommandProcessing"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Cards"
+    "${CMAKE_CURRENT_SOURCE_DIR}/map"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Player"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Orders"
+)
+
+
+foreach(driver IN ITEMS MapDriver PlayerDriver CardsDriver OrdersDriver OrderDriver2 GameEngineDriver GameEngineDriverPart2 CommandInputTests LogObserverDriver)
     set_target_properties(${driver} PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED YES

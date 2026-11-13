@@ -213,6 +213,9 @@ void GameEngine::addPlayer(const string &name)
     }
     // add player to vector
     players.push_back(new Player(name));
+
+
+     passObserversTo(*players.back()->getOrders());
 }
 
 // gamestart is called before transitioning to the Play phase
@@ -543,8 +546,16 @@ void GameEngine::setState(State *state)
     {
         delete this->currentState;
         this->currentState = state;
+        
+        Notify(this);
     }
 }
+
+//return game state as string for game log
+std::string GameEngine::stringToLog() const   
+{  
+    return "Game State: " + *currentState->getName();  
+}   
 
 // default constructor
 Phase::Phase() : name(new string()) {}
@@ -609,7 +620,7 @@ std::ostream &operator<<(std::ostream &os, const Startup &startup)
 // same as startup class
 Play::Play() : Phase("Play") {}
 Play::Play(const Play &play) : Phase(play) {}
-// Copy the name of another Play phase.
+// Copy the name of another Play phase
 Play &Play::operator=(const Play &play)
 {
     if (this != &play)

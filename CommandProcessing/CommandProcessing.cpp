@@ -10,7 +10,7 @@ using namespace std;
 CommandProcessor::CommandProcessor() = default;
 
 // History copies own independent commands and effects.
-CommandProcessor::CommandProcessor(const CommandProcessor &commandProcessor)
+CommandProcessor::CommandProcessor(const CommandProcessor &commandProcessor) : Subject(commandProcessor), ILoggable(commandProcessor)
 {
     try
     {
@@ -34,6 +34,10 @@ CommandProcessor &CommandProcessor::operator=(const CommandProcessor &commandPro
 {
     if (this != &commandProcessor)
     {
+        Subject::operator=(commandProcessor); 
+        ILoggable::operator=(commandProcessor);   
+
+
         CommandProcessor copy(commandProcessor);
         commands.swap(copy.commands);
     }
@@ -64,6 +68,14 @@ Command *CommandProcessor::getCommand()
 
     unique_ptr<Command> command(validate(*text));
     saveCommand(*command);
+
+    if (!command->getEffect()->empty())   
+    {  
+        string rejection = *command->getEffect();  
+        command->saveEffect(rejection);   
+    }  
+
+
     return command.release();
 }
 
@@ -108,7 +120,18 @@ Command *CommandProcessor::validate(string &command)
 void CommandProcessor::saveCommand(Command &command)
 {
     commands.push_back(&command);
+
+    passObserversTo(command);  
+    Notify(this);  
 }
+
+string CommandProcessor::stringToLog() const 
+{  
+    if (commands.empty())   
+        return "Command: (none)";  
+    return "Command: " + *commands.back()->getCommand();   
+}   
+
 
 // Construct an empty command.
 Command::Command() : Command(nullptr, nullptr) {}
@@ -166,7 +189,14 @@ string *Command::getEffect()
 void Command::saveEffect(string &effect)
 {
     *this->effect = effect;
+
+    Notify(this);
 }
+
+string Command::stringToLog() const   
+{  
+    return "Command Effect (" + *command + "): " + *effect;   
+}   
 
 // Construct a file-backed command processor.
 FileCommandProcessorAdapter::FileCommandProcessorAdapter(const string &fileName)

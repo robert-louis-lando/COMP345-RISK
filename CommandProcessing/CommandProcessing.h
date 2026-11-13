@@ -9,6 +9,10 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+
+#include "../LoggingObserver/LoggingObserver.h"
+
+
 using namespace std;
 
 class Command;
@@ -18,7 +22,7 @@ class FileLineReader;
  *  Execution belongs to the game engine, which updates the saved Command's effect.
  *  Derived adapters change only the input source through readCommand().
  */
-class CommandProcessor
+class CommandProcessor : public Subject, public ILoggable
 {
 public:
     /** @brief User command names specified for the startup and game-control interface. */
@@ -43,6 +47,10 @@ public:
      *        otherwise it contains a rejection error. No game action is executed here.
      */
     Command *getCommand();
+
+    string stringToLog() const override;
+
+
     /** @brief Check command syntax and whether the current engine state accepts it.
      */
     Command *validate(string &command);
@@ -67,7 +75,7 @@ private:
 /** @brief Owns command text and its rejection error or execution outcome.
  *  A valid command has an empty effect until the engine records its execution result.
  */
-class Command
+class Command : public Subject, public ILoggable
 {
 public:
     /** @brief Construct a command with empty text and an empty effect. */
@@ -93,6 +101,8 @@ public:
     string *getEffect();
     /** @brief Copy a rejection error or execution outcome into the owned effect string. */
     void saveEffect(string &effect);
+
+     string stringToLog() const override;
 
 private:
     /** @brief Owned command text. */

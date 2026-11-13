@@ -1,0 +1,6 @@
+validatemap
+loadmap maps/solar/solar.map
+validatemap
+addplayer Alice
+addplayer Bob
+badcommand

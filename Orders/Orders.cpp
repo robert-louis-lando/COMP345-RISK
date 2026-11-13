@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <random>
 
+
+#include <sstream> 
+
+
 // Locate a territory visible to the player, including adjacent enemy targets.
 static Territory *findTerritory(Player *player, const string &name)
 {
@@ -39,13 +43,16 @@ Order::Order(Player *player) : playerName(new string(player ? *player->getName()
 
 // Copy constructor for Order
 Order::Order(const Order& other)
-    : playerName(new string(*other.playerName)),
+    : Subject(other), ILoggable(other),
+      playerName(new string(*other.playerName)),
       effect(new string(*other.effect)),
       executed(new bool(*other.executed)), issuer(other.issuer) {}
 
 // Assignment operator for Order
 Order& Order::operator=(const Order& other) {
     if (this != &other) {
+        Subject::operator=(other);
+        ILoggable::operator=(other); 
         *playerName = *other.playerName;
         *effect = *other.effect;
         *executed = *other.executed;
@@ -60,6 +67,10 @@ Order::~Order() {
     delete effect;
     delete executed;
 }
+
+string Order::stringToLog() const { 
+    return "Order Effect (" + getType() + "): " + *effect;   
+} 
 
 // Stream insertion operator for Order
 ostream& operator<<(ostream& out, const Order& order) {
@@ -141,6 +152,9 @@ void Deploy::execute() {
         *executed = false;
         *effect = "Deploy order is invalid.";
     }
+
+
+    Notify(this);
 }
 
 // Creates a copy of the Deploy order
@@ -230,7 +244,7 @@ void Advance::execute() {
                 target->setArmyCount(target->getArmyCount() + *numberOfArmies);
             } else if (target->getOwner() != nullptr && issuer->isNegotiatedWith(target->getOwner())) {
                 source->setArmyCount(source->getArmyCount() + *numberOfArmies);
-                *executed = false; *effect = "Advance blocked by negotiation."; return;
+                *executed = false; *effect = "Advance blocked by negotiation."; Notify(this); return;
             } else {
                 int attackers = *numberOfArmies;
                 int defenders = target->getArmyCount();
@@ -259,6 +273,8 @@ void Advance::execute() {
         *executed = false;
         *effect = "Advance order is invalid.";
     }
+
+    Notify(this);
 }
 
 // Creates a copy of the Advance order
@@ -336,6 +352,8 @@ void Bomb::execute() {
         *executed = false;
         *effect = "Bomb order is invalid.";
     }
+
+     Notify(this); 
 }
 
 // Creates a copy of the Bomb order
@@ -413,6 +431,8 @@ void Blockade::execute() {
         *executed = false;
         *effect = "Blockade order is invalid.";
     }
+
+    Notify(this);
 }
 
 // Creates a copy of the Blockade order
@@ -501,6 +521,8 @@ void Airlift::execute() {
         *executed = false;
         *effect = "Airlift order is invalid.";
     }
+
+     Notify(this); 
 }
 
 // Creates a copy of the Airlift order
@@ -579,6 +601,8 @@ void Negotiate::execute() {
         *executed = false;
         *effect = "Negotiate order is invalid.";
     }
+
+    Notify(this);
 }
 
 // Creates a copy of the Negotiate order
@@ -608,7 +632,7 @@ OrdersList::OrdersList() : orders(new vector<Order*>()) {}
 // Copy constructor for OrdersList
 // Each order is cloned so that the new OrdersList owns its own copies.
 // This prevents two lists from deleting the same Order objet. 
-OrdersList::OrdersList(const OrdersList& other) : orders(new vector<Order*>()) {
+OrdersList::OrdersList(const OrdersList& other) : Subject(other), ILoggable(other), orders(new vector<Order*>()) {
     for (unsigned int i = 0; i < other.orders->size(); i++) {
         orders->push_back((*other.orders)[i]->clone());
     }
@@ -619,6 +643,8 @@ OrdersList::OrdersList(const OrdersList& other) : orders(new vector<Order*>()) {
 // in the other list.
 OrdersList& OrdersList::operator=(const OrdersList& other) {
     if (this != &other) {
+        Subject::operator=(other);
+        ILoggable::operator=(other);
         // Delete existing orders.
         for (unsigned int i = 0; i < orders->size(); i++) {
             delete (*orders)[i];
@@ -648,6 +674,8 @@ void OrdersList::add(Order* order) {
 
     if (order != nullptr) {
         orders->push_back(order);
+        passObserversTo(*order);
+        Notify(this);
     }
 
 }
@@ -693,6 +721,15 @@ Order* OrdersList::get(int index) const {
     }
     return (*orders)[index];
 }
+
+string OrdersList::stringToLog() const {   
+    if (orders->empty()) {  
+        return "Order list is empty.";   
+    }   
+    ostringstream description;   
+    description << *orders->back(); 
+    return "Order issued: " + description.str();  
+} 
 
 // Stream insertion operator for OrdersList
 ostream& operator<<(ostream& out, const OrdersList& ordersList) {
