@@ -102,13 +102,29 @@ Command *CommandProcessor::validate(string &command)
     istringstream stream(command);
     string name;
     string argument;
-    string extra;
-    stream >> name >> argument;
+    stream >> name;
+    getline(stream, argument);
+    const std::string whitespace = " \t\n\r\f\v";
+    size_t first = argument.find_first_not_of(whitespace);
+    argument = first == std::string::npos ? "" : argument.substr(first);
+    size_t last = argument.find_last_not_of(whitespace);
+    if (last != std::string::npos)
+    {
+        argument.erase(last + 1);
+    }
 
     string effect;
-    if (stream >> extra)
-        effect = "Too many arguments for command: " + name;
-    else
+    if (name != "addplayer")
+    {
+        istringstream argumentStream(argument);
+        string firstArgument;
+        string extra;
+        argumentStream >> firstArgument;
+        argument = firstArgument;
+        if (argumentStream >> extra)
+            effect = "Too many arguments for command: " + name;
+    }
+    if (effect.empty())
         GameEngine::getInstance().canExecute(name, argument, &effect);
 
     string emptyEffect;

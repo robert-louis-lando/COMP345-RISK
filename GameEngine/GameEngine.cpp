@@ -1,5 +1,6 @@
 #include "GameEngine.h"
 #include "CommandProcessing.h"
+#include "../PlayerStrategy/PlayerStrategies.h"
 #include "Map.h"
 #include <cstdlib>
 #include <stdexcept>
@@ -10,10 +11,50 @@
 #include <random>
 #include <filesystem>
 #include <unordered_set>
+#include <cctype>
 using namespace std;
 
 namespace
 {
+    std::string trimmed(const std::string &value)
+    {
+        const std::string whitespace = " \t\n\r\f\v";
+        size_t first = value.find_first_not_of(whitespace);
+        if (first == std::string::npos)
+        {
+            return "";
+        }
+        size_t last = value.find_last_not_of(whitespace);
+        return value.substr(first, last - first + 1);
+    }
+
+    void lowerCase(std::string &value)
+    {
+        std::transform(value.begin(), value.end(), value.begin(),
+                       [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
+    }
+
+    bool parseAddPlayerArgument(const std::string &input, std::string &name,
+                                std::string &strategy)
+    {
+        istringstream stream(trimmed(input));
+        if (!(stream >> name))
+        {
+            return false;
+        }
+        getline(stream, strategy);
+        strategy = trimmed(strategy);
+        lowerCase(strategy);
+        return true;
+    }
+
+    bool isValidPlayerStrategy(const std::string &strategy)
+    {
+        return strategy.empty() || strategy == "human" || strategy == "aggressive" ||
+               strategy == "agressive" || strategy == "benevolent" ||
+               strategy == "neutral" || strategy == "cheater";
+    }
+
     // Check whether a command argument contains non-whitespace text.
     bool hasArgument(const string &argument)
     {
@@ -58,6 +99,19 @@ namespace
         else if (!allowed)
         {
             error = "Command '" + command + "' is not allowed in state '" + state + "'";
+        }
+        else if (command == "addplayer")
+        {
+            string playerName;
+            string strategy;
+            if (!parseAddPlayerArgument(argument, playerName, strategy))
+            {
+                error = "Missing player name";
+            }
+            else if (!isValidPlayerStrategy(strategy))
+            {
+                error = "Invalid player strategy: " + strategy;
+            }
         }
         if (effect != nullptr)
         {
@@ -112,11 +166,21 @@ void GameEngine::executeCommand(Command &command)
     {
         istringstream stream(*command.getCommand());
         string argument;
+        stream >> name;
+        getline(stream, argument);
+        argument = trimmed(argument);
+
         string extra;
-        stream >> name >> argument;
-        if (stream >> extra)
+        if (name != "addplayer")
         {
-            throw invalid_argument("Too many arguments for command: " + name);
+            istringstream argumentStream(argument);
+            string firstArgument;
+            argumentStream >> firstArgument;
+            argument = firstArgument;
+            if (argumentStream >> extra)
+            {
+                throw invalid_argument("Too many arguments for command: " + name);
+            }
         }
 
         string error;
@@ -199,10 +263,29 @@ bool GameEngine::validateMap() const
 }
 
 // add a player to the gameengine vector
-void GameEngine::addPlayer(const string &name)
+void GameEngine::addPlayer(const string &name, const string &strategyName)
 {
+    string playerName;
+    string strategy = strategyName;
+    if (strategy.empty())
+    {
+        if (!parseAddPlayerArgument(name, playerName, strategy))
+        {
+            throw invalid_argument("Player name cannot be empty");
+        }
+    }
+    else
+    {
+        playerName = trimmed(name);
+    }
+    lowerCase(strategy);
+    if (!isValidPlayerStrategy(strategy))
+    {
+        throw invalid_argument("Invalid player strategy: " + strategy);
+    }
+
     // check if the name is empty
-    if (name.find_first_not_of(" \t\n\r\f\v") == string::npos)
+    if (playerName.find_first_not_of(" \t\n\r\f\v") == string::npos)
     {
         throw invalid_argument("Player name cannot be empty");
     }
@@ -212,10 +295,31 @@ void GameEngine::addPlayer(const string &name)
         throw invalid_argument("A game can have at most 6 players");
     }
     // add player to vector
-    players.push_back(new Player(name));
+    players.push_back(new Player(playerName));
 
+    lowerCase(strategy);
+    if (strategy == "aggressive" || strategy == "agressive")
+    {
+        players.back()->setStrategy(new AggressivePlayerStrategy());
+    }
+    else if (strategy == "benevolent")
+    {
+        players.back()->setStrategy(new BenevolentPlayerStrategy());
+    }
+    else if (strategy == "neutral")
+    {
+        players.back()->setStrategy(new NeutralPlayerStrategy());
+    }
+    else if (strategy == "cheater")
+    {
+        players.back()->setStrategy(new CheaterPlayerStrategy());
+    }
+    else
+    {
+        players.back()->setStrategy(new HumanPlayerStrategy());
+    }
 
-     passObserversTo(*players.back()->getOrders());
+    passObserversTo(*players.back()->getOrders());
 }
 
 // gamestart is called before transitioning to the Play phase

@@ -1,5 +1,6 @@
 #include "Player.h"
 #include "Cards.h"
+#include "../PlayerStrategy/PlayerStrategies.h"
 #include "../map/Map.h"
 #include <algorithm>
 #include <stdexcept>
@@ -18,6 +19,8 @@ Player::Player(const std::string &name)
     orders = new OrdersList();
     negotiatedPlayers = new std::vector<Player *>();
     conqueredTerritoryThisTurn = new bool(false);
+    // New players retain the original interactive behavior by default.
+    strategy = new HumanPlayerStrategy();
 }
 
 // copy constructor, copy of a player
@@ -34,6 +37,8 @@ Player::Player(const Player &other)
     orders = new OrdersList(*other.orders);
     negotiatedPlayers = new std::vector<Player *>(*other.negotiatedPlayers);
     conqueredTerritoryThisTurn = new bool(*other.conqueredTerritoryThisTurn);
+    // Clone instead of sharing the strategy between Player instances.
+    strategy = other.strategy == nullptr ? nullptr : other.strategy->clone();
 }
 
 // replace player with other player data
@@ -52,6 +57,9 @@ Player &Player::operator=(const Player &other)
         *orders = *other.orders;
         *negotiatedPlayers = *other.negotiatedPlayers;
         *conqueredTerritoryThisTurn = *other.conqueredTerritoryThisTurn;
+        // Replace the old policy with an independent copy of the source policy.
+        delete strategy;
+        strategy = other.strategy == nullptr ? nullptr : other.strategy->clone();
     }
 
     return *this;
@@ -70,6 +78,8 @@ Player::~Player()
     delete orders;
     delete negotiatedPlayers;
     delete conqueredTerritoryThisTurn;
+    // The Player owns its strategy.
+    delete strategy;
 }
 
 // add territory to owned territories
@@ -95,6 +105,8 @@ void Player::removeTerritory(Territory *territory)
     territories->erase(
         std::remove(territories->begin(), territories->end(), territory),
         territories->end());
+    // Keep the Territory owner pointer consistent with the collection update.
+    territory->setOwner(nullptr);
 }
 
 // Add a unique temporary non-aggression partner.
@@ -119,6 +131,21 @@ void Player::markTerritoryConquered() { *conqueredTerritoryThisTurn = true; }
 bool Player::hasConqueredTerritoryThisTurn() const { return *conqueredTerritoryThisTurn; }
 // Reset the conquest marker for the next turn.
 void Player::clearConquestFlag() { *conqueredTerritoryThisTurn = false; }
+
+void Player::setStrategy(PlayerStrategy *newStrategy)
+{
+    // Ignore null policies so Player always has a usable strategy.
+    if (newStrategy == nullptr) return;
+    if (strategy != newStrategy) delete strategy;
+    strategy = newStrategy;
+}
+
+PlayerStrategy *Player::getStrategy() const { return strategy; }
+
+const std::vector<Territory *> &Player::getOwnedTerritories() const
+{
+    return *territories;
+}
 
 // add territory to the list of territories they can attack
 void Player::addTerritoryToAttack(Territory *territory)
@@ -179,33 +206,33 @@ void Player::setReinforcementPool(int troops)
 // return player list of territories to defend
 std::vector<Territory *> Player::toDefend() const
 {
-    return *territories;
+    // Delegate prioritization while retaining a safe fallback for null policy.
+    return strategy == nullptr ? *territories
+                               : strategy->toDefend(const_cast<Player *>(this));
 }
 
 // return player's list of territories to attack
 std::vector<Territory *> Player::toAttack() const
 {
-    std::vector<Territory *> neighboringTerritories;
-    std::unordered_set<Territory *> alreadyAdded;
-
-    for (Territory *territory : *territories)
-    {
-        for (Territory *neighbor : territory->getAdjacentTerritories())
-        {
-            if (ownedTerritories->count(neighbor) == 0 &&
-                alreadyAdded.insert(neighbor).second)
-            {
-                neighboringTerritories.push_back(neighbor);
-            }
-        }
-    }
-
-    return neighboringTerritories;
+    // Strategies determine whether and how enemy borders are exposed.
+    return strategy == nullptr ? std::vector<Territory *>()
+                               : strategy->toAttack(const_cast<Player *>(this));
 }
 
 // Issue order loop
 void Player::issueOrder(Deck *deck, std::vector<Player *> players)
 {
+    if (strategy != nullptr)
+    {
+        // The Player supplies identity and state; the strategy supplies policy.
+        strategy->issueOrder(this, deck, players);
+        return;
+    }
+}
+
+void Player::issueHumanOrder(Deck *deck, const std::vector<Player *> &players)
+{
+    // This is the former human loop, retained behind the human strategy.
     std::cout << "\nPlayer: " << *name << '\n';
     std::cout << "\n"
               << "Deploy all your reinforcements:"

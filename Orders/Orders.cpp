@@ -1,8 +1,10 @@
 #include "Orders.h"
 #include "../Player/Player.h"
 #include "../map/Map.h"
+#include "../PlayerStrategy/PlayerStrategies.h"
 #include <algorithm>
 #include <random>
+#include <iostream>
 
 
 #include <sstream> 
@@ -261,7 +263,18 @@ void Advance::execute() {
                 if (defenders == 0 && attackers > 0) {
                     Player *oldOwner = target->getOwner();
                     if (oldOwner) oldOwner->removeTerritory(target);
-                    target->setOwner(issuer); issuer->addTerritory(target);
+                    issuer->addTerritory(target);
+                    // A neutral player becomes aggressive only after a valid
+                    // attack successfully conquers one of its territories.
+                    if (oldOwner != nullptr &&
+                        dynamic_cast<NeutralPlayerStrategy *>(
+                            oldOwner->getStrategy()) != nullptr)
+                    {
+                        oldOwner->setStrategy(new AggressivePlayerStrategy());
+                        std::cout << "[Neutral] " << *oldOwner->getName()
+                                  << " was attacked successfully and changed to "
+                                     "AggressivePlayerStrategy.\n";
+                    }
                     target->setArmyCount(attackers);
                     issuer->markTerritoryConquered();
                 }

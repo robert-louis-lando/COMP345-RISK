@@ -37,7 +37,7 @@ public:
     // validate if map is not null and delegate validation
     bool validateMap() const;
     // does check and add player to the vector of players
-    void addPlayer(const std::string &name);
+    void addPlayer(const std::string &name, const std::string &strategy = "");
     // does some actions before transitioning to the play phase
     void gameStart();
     // adds each player's territory and continent-control reinforcements

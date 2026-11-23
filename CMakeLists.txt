@@ -7,7 +7,9 @@ add_executable(PlayerDriver
     Player/Player.cpp Player/PlayerDriver.cpp Player/Player.h
     Orders/Orders.cpp Orders/Orders.h Cards/Cards.cpp Cards/Cards.h
     map/Map.cpp map/Map.h
-    LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h) 
+    LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h)
+# Compile the strategy implementation into each target that uses Player.
+target_sources(PlayerDriver PRIVATE PlayerStrategy/PlayerStrategies.cpp PlayerStrategy/PlayerStrategies.h)
 target_include_directories(PlayerDriver PRIVATE Player Orders Cards map)
 add_executable(CardsDriver Cards/Cards.cpp Cards/CardsDriver.cpp Cards/Cards.h)
 add_executable(OrdersDriver
@@ -15,6 +17,7 @@ add_executable(OrdersDriver
     Player/Player.cpp Player/Player.h Cards/Cards.cpp Cards/Cards.h
     map/Map.cpp map/Map.h
     LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h)
+target_sources(OrdersDriver PRIVATE PlayerStrategy/PlayerStrategies.cpp PlayerStrategy/PlayerStrategies.h)
 target_include_directories(OrdersDriver PRIVATE Orders Player Cards map)
 add_executable(OrderDriver2
     Orders/Orders.cpp Orders/OrderDriver2.cpp Orders/Orders.h
@@ -22,6 +25,7 @@ add_executable(OrderDriver2
     map/Map.cpp map/Map.h GameEngine/GameEngine.cpp GameEngine/GameEngine.h
     CommandProcessing/CommandProcessing.cpp CommandProcessing/CommandProcessing.h
     LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h)
+target_sources(OrderDriver2 PRIVATE PlayerStrategy/PlayerStrategies.cpp PlayerStrategy/PlayerStrategies.h)
 target_include_directories(OrderDriver2 PRIVATE Orders Player Cards map GameEngine CommandProcessing)
 add_executable(GameEngineDriver
     GameEngine/GameEngine.cpp
@@ -39,6 +43,8 @@ add_executable(GameEngineDriver
     Orders/Orders.h
     LoggingObserver/LoggingObserver.cpp  
     LoggingObserver/LoggingObserver.h  
+    PlayerStrategy/PlayerStrategies.cpp
+    PlayerStrategy/PlayerStrategies.h
 )
 target_include_directories(GameEngineDriver PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
@@ -64,6 +70,8 @@ add_executable(GameEngineDriverPart2
     Orders/Orders.h
     LoggingObserver/LoggingObserver.cpp   
     LoggingObserver/LoggingObserver.h  
+    PlayerStrategy/PlayerStrategies.cpp
+    PlayerStrategy/PlayerStrategies.h
 )
 target_include_directories(GameEngineDriverPart2 PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
@@ -82,6 +90,7 @@ add_executable(CommandInputTests
     Player/Player.cpp
     Orders/Orders.cpp
     LoggingObserver/LoggingObserver.cpp
+    PlayerStrategy/PlayerStrategies.cpp
 )
 target_include_directories(CommandInputTests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
@@ -107,6 +116,8 @@ add_executable(LogObserverDriver
     Player/Player.h
     Orders/Orders.cpp
     Orders/Orders.h
+    PlayerStrategy/PlayerStrategies.cpp
+    PlayerStrategy/PlayerStrategies.h
 )
 target_include_directories(LogObserverDriver PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/LoggingObserver"
