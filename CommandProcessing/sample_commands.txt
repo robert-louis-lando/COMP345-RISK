@@ -8,4 +8,4 @@ issueorder
 endissueorders
 execorder
 win
-end
+quit

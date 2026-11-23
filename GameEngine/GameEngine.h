@@ -25,7 +25,7 @@ public:
     // Executes a command and saves the outcome on that same object.
     // Rejected commands retain their error before an exception is thrown.
     void executeCommand(Command &command);
-    // Allows the driver to stop after end while still destroying its input processor.
+    // Allows the driver to stop after quit while still destroying its input processor.
     bool isRunning() const;
     // checks whether the current state accepts a command without changing state
     // optionally writes a rejection error; success clears it without claiming execution

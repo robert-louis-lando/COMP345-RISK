@@ -50,7 +50,7 @@ namespace
                         const string &state, bool allowed, string *effect)
     {
         static const char *knownCommands[] = {
-            "loadmap", "validatemap", "addplayer", "gamestart", "play", "end",
+            "loadmap", "validatemap", "addplayer", "gamestart", "replay", "quit",
             "issueorder", "endissueorders", "execorder", "endexecorders", "win"};
         bool known = false;
         for (const char *name : knownCommands)
@@ -173,7 +173,7 @@ void GameEngine::executeCommand(Command &command)
         currentState->transition(&name, this, argument);
 
         // Only claim the state/phase change that was actually performed.
-        string effect = name == "end"
+        string effect = name == "quit"
                             ? "Game ended"
                             : "State: " + oldState + " -> " + *getCurrentState() + "; Phase: " + oldPhase + " -> " + *getCurrentPhase();
         command.saveEffect(effect);
@@ -186,7 +186,7 @@ void GameEngine::executeCommand(Command &command)
     }
 
     // Return to the driver so it can print the saved effect and release the input source.
-    if (name == "end")
+    if (name == "quit")
     {
         running = false;
     }
@@ -1064,7 +1064,7 @@ std::ostream &operator<<(std::ostream &os, const Win &win)
 // Validate commands accepted after a winner is found.
 bool Win::canExecute(const string &command, const string &argument, string *effect) const
 {
-    bool valid = command == "end" || command == "play";
+    bool valid = command == "quit" || command == "replay";
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
 // Apply a valid command transition from the win state.
@@ -1074,7 +1074,7 @@ void Win::transition(const string *command, GameEngine *gameEngine, const string
     {
         throw invalid_argument("Wrong command for this state");
     }
-    if (command->compare("end") == 0)
+    if (command->compare("quit") == 0)
     {
         // executeCommand saves the effect and tells the driver to stop.
         return;
