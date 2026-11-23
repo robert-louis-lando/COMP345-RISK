@@ -246,6 +246,7 @@ void Advance::execute() {
                 source->setArmyCount(source->getArmyCount() + *numberOfArmies);
                 *executed = false; *effect = "Advance blocked by negotiation."; Notify(this); return;
             } else {
+                if (target->getOwner() != nullptr) target->getOwner()->notifyAttacked();
                 int attackers = *numberOfArmies;
                 int defenders = target->getArmyCount();
                 static std::mt19937 rng(std::random_device{}());
@@ -344,6 +345,7 @@ void Bomb::execute() {
     if (validate()) {
         if (issuer != nullptr) {
             Territory *target = findTerritory(issuer, *targetTerritory);
+            if (target->getOwner() != nullptr) target->getOwner()->notifyAttacked();
             target->setArmyCount(target->getArmyCount() / 2);
         }
         *executed = true;

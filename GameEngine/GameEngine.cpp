@@ -1,6 +1,7 @@
 #include "GameEngine.h"
 #include "CommandProcessing.h"
 #include "Map.h"
+#include "../Player/PlayerStrategies.h"
 #include <cstdlib>
 #include <stdexcept>
 #include <iostream>
@@ -10,6 +11,8 @@
 #include <random>
 #include <filesystem>
 #include <unordered_set>
+#include <cctype>
+#include <iomanip>
 using namespace std;
 
 namespace
@@ -20,12 +23,34 @@ namespace
         return argument.find_first_not_of(" \t\n\r\f\v") != string::npos;
     }
 
+    string lowercase(string value)
+    {
+        transform(value.begin(), value.end(), value.begin(),
+                  [](unsigned char c) { return static_cast<char>(tolower(c)); });
+        return value;
+    }
+
+    bool parsePlayerSpecification(const string &argument, string &playerName, string &strategy)
+    {
+        istringstream stream(argument);
+        string extra;
+        return static_cast<bool>(stream >> quoted(playerName) >> strategy) && !(stream >> extra);
+    }
+
+    bool isSupportedStrategy(const string &strategy)
+    {
+        const string normalized = lowercase(strategy);
+        return normalized == "human" || normalized == "aggressive" ||
+               normalized == "benevolent" || normalized == "neutral" ||
+               normalized == "cheater";
+    }
+
     // Validation supplies rejection reasons only; execution will supply successful effects.
     bool setCheckEffect(const string &command, const string &argument,
                         const string &state, bool allowed, string *effect)
     {
         static const char *knownCommands[] = {
-            "loadmap", "validatemap", "addplayer", "gamestart", "replay", "quit",
+            "loadmap", "validatemap", "addplayer", "gamestart", "play", "end",
             "issueorder", "endissueorders", "execorder", "endexecorders", "win"};
         bool known = false;
         for (const char *name : knownCommands)
@@ -49,7 +74,16 @@ namespace
         }
         else if (needsArgument && !hasArgument(argument))
         {
-            error = command == "loadmap" ? "Missing map filename" : "Missing player name";
+            error = command == "loadmap" ? "Missing map filename" : "Use: addplayer <name> <strategy>";
+        }
+        else if (command == "addplayer")
+        {
+            string playerName;
+            string strategy;
+            if (!parsePlayerSpecification(argument, playerName, strategy))
+                error = "Use: addplayer <name> <strategy>";
+            else if (!isSupportedStrategy(strategy))
+                error = "Unknown player strategy: " + strategy;
         }
         else if (!needsArgument && hasArgument(argument))
         {
@@ -113,10 +147,19 @@ void GameEngine::executeCommand(Command &command)
         istringstream stream(*command.getCommand());
         string argument;
         string extra;
-        stream >> name >> argument;
-        if (stream >> extra)
+        stream >> name;
+        if (name == "addplayer")
         {
-            throw invalid_argument("Too many arguments for command: " + name);
+            stream >> ws;
+            getline(stream, argument);
+        }
+        else
+        {
+            stream >> argument;
+            if (stream >> extra)
+            {
+                throw invalid_argument("Too many arguments for command: " + name);
+            }
         }
 
         string error;
@@ -130,7 +173,7 @@ void GameEngine::executeCommand(Command &command)
         currentState->transition(&name, this, argument);
 
         // Only claim the state/phase change that was actually performed.
-        string effect = name == "quit"
+        string effect = name == "end"
                             ? "Game ended"
                             : "State: " + oldState + " -> " + *getCurrentState() + "; Phase: " + oldPhase + " -> " + *getCurrentPhase();
         command.saveEffect(effect);
@@ -143,7 +186,7 @@ void GameEngine::executeCommand(Command &command)
     }
 
     // Return to the driver so it can print the saved effect and release the input source.
-    if (name == "quit")
+    if (name == "end")
     {
         running = false;
     }
@@ -199,7 +242,7 @@ bool GameEngine::validateMap() const
 }
 
 // add a player to the gameengine vector
-void GameEngine::addPlayer(const string &name)
+void GameEngine::addPlayer(const string &name, const string &strategy)
 {
     // check if the name is empty
     if (name.find_first_not_of(" \t\n\r\f\v") == string::npos)
@@ -212,7 +255,19 @@ void GameEngine::addPlayer(const string &name)
         throw invalid_argument("A game can have at most 6 players");
     }
     // add player to vector
-    players.push_back(new Player(name));
+    const string strategyName = lowercase(strategy);
+    Player *player = new Player(name);
+    if (strategyName == "aggressive") player->setStrategy(new AggressivePlayerStrategy());
+    else if (strategyName == "benevolent") player->setStrategy(new BenevolentPlayerStrategy());
+    else if (strategyName == "neutral") player->setStrategy(new NeutralPlayerStrategy());
+    else if (strategyName == "cheater") player->setStrategy(new CheaterPlayerStrategy());
+    else if (strategyName == "human") player->setStrategy(new HumanPlayerStrategy());
+    else
+    {
+        delete player;
+        throw invalid_argument("Unknown player strategy: " + strategy);
+    }
+    players.push_back(player);
 
 
      passObserversTo(*players.back()->getOrders());
@@ -237,6 +292,10 @@ void GameEngine::gameStart()
         throw invalid_argument("Could not distribute territories to players");
     }
     std::cout << "Territories fairly distributed (player counts differ by at most one).\n";
+    std::cout << "Player order and strategies:\n";
+    for (const Player *player : players)
+        std::cout << "  " << *player->getName() << " - "
+                  << player->getStrategy()->name() << '\n';
     // goes through all players to assign their 50 troops and to make each player draw 2 cards
     for (Player *player : players)
     {
@@ -257,6 +316,7 @@ void GameEngine::reinforcementPhase()
         throw invalid_argument("Cannot calculate reinforcements without a map");
     }
 
+    std::cout << "\n--- Reinforcement phase ---\n";
     for (Player *player : players)
     {
         if (player == nullptr)
@@ -296,6 +356,8 @@ void GameEngine::reinforcementPhase()
 
         player->setReinforcementPool(
             previousPool + reinforcements);
+        std::cout << *player->getName() << " receives " << reinforcements
+                  << " armies (pool: " << *player->getReinforcementPool() << ").\n";
     }
 }
 
@@ -303,13 +365,17 @@ void GameEngine::reinforcementPhase()
 // Ask each player to create orders for the current turn.
 void GameEngine::issueOrdersPhase()
 {
+    std::cout << "\n--- Issue orders phase ---\n";
     for (Player *player : players)
     {
         if (player == nullptr)
         {
             throw invalid_argument("Cannot issue orders for a null player");
         }
+        std::cout << *player->getName() << " [" << player->getStrategy()->name()
+                  << "] owns " << player->getTerritories().size() << " territories.\n";
         player->issueOrder(deck, players);
+        std::cout << "  Orders queued: " << player->getOrders()->size() << "\n";
     }
 }
 
@@ -317,10 +383,10 @@ void GameEngine::issueOrdersPhase()
 // Execute and remove deploy orders, then execute remaining orders.
 void GameEngine::executeOrdersPhase()
 {
+    std::cout << "\n--- Execute orders phase ---\n";
     for (Player *player : players)
         if (player != nullptr) {
             player->clearNegotiations();
-            player->clearConquestFlag();
         }
     for (Player *player : players)
     {
@@ -345,7 +411,10 @@ void GameEngine::executeOrdersPhase()
 
             if (order->validate())
             {
+                std::cout << "Executing for " << *player->getName() << ": "
+                          << *order << '\n';
                 order->execute();
+                std::cout << "  " << order->stringToLog() << '\n';
             }
             else
             {
@@ -384,7 +453,10 @@ void GameEngine::executeOrdersPhase()
 
             if (order->validate())
             {
+                std::cout << "Executing for " << *player->getName() << ": "
+                          << *order << '\n';
                 order->execute();
+                std::cout << "  " << order->stringToLog() << '\n';
             }
             else
             {
@@ -402,6 +474,8 @@ void GameEngine::executeOrdersPhase()
         if (player == nullptr || !player->hasConqueredTerritoryThisTurn()) continue;
         try {
             player->addCard(new Card(deck->draw()));
+            std::cout << *player->getName()
+                      << " conquered territory this turn and receives a card.\n";
         } catch (const std::out_of_range &) {
             // An exhausted deck cannot provide a conquest reward.
         }
@@ -450,9 +524,16 @@ bool GameEngine::checkPlayPhaseResult()
 // Play phase
 void GameEngine::playPhase()
 {
+    int turn = 0;
     while (running && currentPhase != nullptr &&
            *currentPhase->getName() == "Play")
     {
+        ++turn;
+        std::cout << "\n========================================\n"
+                  << "TURN " << turn << '\n'
+                  << "========================================\n";
+        for (Player *player : players)
+            if (player != nullptr) player->clearConquestFlag();
         setState(new AssignReinforcement());
         reinforcementPhase();
 
@@ -786,7 +867,9 @@ std::ostream &operator<<(std::ostream &os, const MapValidated &mapValidated)
 // Validate commands accepted after map validation.
 bool MapValidated::canExecute(const string &command, const string &argument, string *effect) const
 {
-    bool valid = command == "addplayer" && hasArgument(argument);
+    string playerName;
+    string strategy;
+    bool valid = command == "addplayer" && parsePlayerSpecification(argument, playerName, strategy);
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
 // Apply a valid command transition from the map-validated state.
@@ -796,8 +879,11 @@ void MapValidated::transition(const string *command, GameEngine *gameEngine, con
     {
         throw invalid_argument("Wrong command for this state");
     }
-    std::string error;
-    gameEngine->addPlayer(argument);
+    std::string playerName;
+    std::string strategy;
+    if (!parsePlayerSpecification(argument, playerName, strategy))
+        throw invalid_argument("Use: addplayer <name> <strategy>");
+    gameEngine->addPlayer(playerName, strategy);
     gameEngine->setState(new PlayersAdded());
 }
 
@@ -820,7 +906,9 @@ std::ostream &operator<<(std::ostream &os, const PlayersAdded &playersAdded)
 // Validate commands accepted while players are being added.
 bool PlayersAdded::canExecute(const string &command, const string &argument, string *effect) const
 {
-    bool valid = (command == "addplayer" && hasArgument(argument)) || command == "gamestart";
+    string playerName;
+    string strategy;
+    bool valid = (command == "addplayer" && parsePlayerSpecification(argument, playerName, strategy)) || command == "gamestart";
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
 // Apply a valid command transition from the players-added state.
@@ -832,7 +920,11 @@ void PlayersAdded::transition(const string *command, GameEngine *gameEngine, con
     }
     if (command->compare("addplayer") == 0)
     {
-        gameEngine->addPlayer(argument);
+        std::string playerName;
+        std::string strategy;
+        if (!parsePlayerSpecification(argument, playerName, strategy))
+            throw invalid_argument("Use: addplayer <name> <strategy>");
+        gameEngine->addPlayer(playerName, strategy);
         gameEngine->setState(new PlayersAdded());
     }
     else
@@ -972,7 +1064,7 @@ std::ostream &operator<<(std::ostream &os, const Win &win)
 // Validate commands accepted after a winner is found.
 bool Win::canExecute(const string &command, const string &argument, string *effect) const
 {
-    bool valid = command == "quit" || command == "replay";
+    bool valid = command == "end" || command == "play";
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
 // Apply a valid command transition from the win state.
@@ -982,7 +1074,7 @@ void Win::transition(const string *command, GameEngine *gameEngine, const string
     {
         throw invalid_argument("Wrong command for this state");
     }
-    if (command->compare("quit") == 0)
+    if (command->compare("end") == 0)
     {
         // executeCommand saves the effect and tells the driver to stop.
         return;

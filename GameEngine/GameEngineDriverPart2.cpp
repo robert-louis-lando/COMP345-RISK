@@ -2,13 +2,23 @@
 #include <exception>
 #include <iostream>
 
-// Exercise the GameEngine startup phase and initial state.
+// Run the GameEngine with the Part 1 player strategies.
 int main() {
     try {
         GameEngine& gameEngine = GameEngine::getInstance();
 
-        std::cout << "COMP 345 Risk - Part 2 startup driver\n";
+        std::cout << "COMP 345 Risk - Player Strategy driver\n";
         std::cout << "Initial engine state: " << gameEngine << '\n';
+        std::cout << "Use these commands to start a strategy game:\n"
+                  << "  loadmap maps/solar/solar.map\n"
+                  << "  validatemap\n"
+                  << "  addplayer robert Human\n"
+                  << "  addplayer alex Aggressive\n"
+                  << "  addplayer sam Benevolent\n"
+                  << "  addplayer jules Neutral\n"
+                  << "  addplayer casey Cheater\n"
+                  << "  gamestart\n"
+                  << "Strategies: Human, Aggressive, Benevolent, Neutral, Cheater.\n";
         gameEngine.startupPhase();
         std::cout << "Engine state after startup: " << gameEngine << '\n';
         return 0;

@@ -1,11 +1,11 @@
 validatemap
 loadmap maps/solar/solar.map
 validatemap
-addplayer Alice
-addplayer Bob
+addplayer Alice Human
+addplayer Bob Aggressive
 gamestart
 issueorder
 endissueorders
 execorder
 win
-quit
+end

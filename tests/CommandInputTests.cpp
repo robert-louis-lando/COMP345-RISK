@@ -78,8 +78,8 @@ namespace {
     void testAdapter(const std::filesystem::path& directory){
         const auto file = directory / "commands.txt";
         const auto empty = directory / "empty.txt";
-        writeFile(file, "unknown\nloadmap\nloadmap world.map\nvalidatemap\naddplayer Alice\n"
-                        "gamestart\nissueorder\nendissueorders\nwin\nreplay\n");
+        writeFile(file, "unknown\nloadmap\nloadmap world.map\nvalidatemap\naddplayer Alice Human\n"
+                        "gamestart\nissueorder\nendissueorders\nwin\nplay\n");
         FileCommandProcessorAdapter adapter(file.string());
         CommandProcessor& base = adapter;
         GameEngine& engine = GameEngine::getInstance();
@@ -129,7 +129,7 @@ namespace {
         expect(polymorphic->getCommand() == nullptr, "Polymorphic adapter ignored file EOF");
     }
 
-    void testConsoleAndQuit(const std::filesystem::path& directory){
+    void testConsoleAndEnd(const std::filesystem::path& directory){
         CommandProcessor console;
         std::istringstream input("unknown\nloadmap world.map\n");
         std::streambuf* original = std::cin.rdbuf(input.rdbuf());
@@ -146,16 +146,16 @@ namespace {
         }
         std::cin.rdbuf(original);
 
-        const auto file = directory / "quit.txt";
-        writeFile(file, "quit\n");
+        const auto file = directory / "end.txt";
+        writeFile(file, "end\n");
         FileCommandProcessorAdapter adapter(file.string());
         GameEngine& engine = GameEngine::getInstance();
         engine.setState(new Win());
-        Command* quit = adapter.getCommand();
-        expect(quit && quit->getEffect()->empty(), "Quit validation failed");
-        engine.executeCommand(*quit);
-        expect(!engine.isRunning(), "Quit did not stop the loop");
-        expect(*quit->getEffect() == "Game ended", "Quit effect lost before cleanup");
+        Command* end = adapter.getCommand();
+        expect(end && end->getEffect()->empty(), "End validation failed");
+        engine.executeCommand(*end);
+        expect(!engine.isRunning(), "End did not stop the loop");
+        expect(*end->getEffect() == "Game ended", "End effect lost before cleanup");
     }
 }
 
@@ -166,7 +166,7 @@ int main(){
         std::filesystem::create_directories(directory);
         testReader(directory);
         testAdapter(directory);
-        testConsoleAndQuit(directory);
+        testConsoleAndEnd(directory);
         std::filesystem::remove_all(directory);
         std::cout << "Passed " << checks << " command-input checks\n";
         return 0;

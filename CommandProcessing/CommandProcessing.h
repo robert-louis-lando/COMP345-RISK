@@ -26,7 +26,7 @@ class CommandProcessor : public Subject, public ILoggable
 {
 public:
     /** @brief User command names specified for the startup and game-control interface. */
-    inline static constexpr std::string_view VALID_COMMANDS[] = {"loadmap", "validatemap", "addplayer", "gamestart", "replay", "quit"};
+    inline static constexpr std::string_view VALID_COMMANDS[] = {"loadmap", "validatemap", "addplayer", "gamestart", "play", "end"};
     /** @brief Commands requiring a map filename or player name argument. */
     inline static constexpr std::string_view NEEDS_ARG[] = {"loadmap", "addplayer"};
 
