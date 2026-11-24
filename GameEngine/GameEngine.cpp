@@ -34,9 +34,11 @@ namespace
     {
         istringstream stream(argument);
         string extra;
-        return static_cast<bool>(stream >> quoted(playerName) >> strategy) && !(stream >> extra);
+        // Player names are single tokens, followed by exactly one strategy.
+        return static_cast<bool>(stream >> playerName >> strategy) && !(stream >> extra);
     }
 
+    //helper just to check if the strategy is a valid one and also no case sensitivity
     bool isSupportedStrategy(const string &strategy)
     {
         const string normalized = lowercase(strategy);

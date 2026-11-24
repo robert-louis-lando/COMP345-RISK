@@ -19,6 +19,7 @@ Player::Player(const std::string &name)
     orders = new OrdersList();
     negotiatedPlayers = new std::vector<Player *>();
     conqueredTerritoryThisTurn = new bool(false);
+    // Players use human decisions unless a strategy is selected explicitly.
     strategy = new HumanPlayerStrategy();
 }
 
@@ -125,14 +126,17 @@ void Player::markTerritoryConquered() { *conqueredTerritoryThisTurn = true; }
 bool Player::hasConqueredTerritoryThisTurn() const { return *conqueredTerritoryThisTurn; }
 // Reset the conquest marker for the next turn.
 void Player::clearConquestFlag() { *conqueredTerritoryThisTurn = false; }
+// Replace the owned strategy, rejecting null strategies.
 void Player::setStrategy(PlayerStrategy *newStrategy)
 {
     if (newStrategy == nullptr) throw std::invalid_argument("Player strategy cannot be null");
     if (strategy != newStrategy) { delete strategy; strategy = newStrategy; }
 }
+// Return the strategy without transferring ownership.
 const PlayerStrategy *Player::getStrategy() const { return strategy; }
 void Player::notifyAttacked()
 {
+    // Neutral players become aggressive after their first attack.
     if (strategy != nullptr && std::string(strategy->name()) == "Neutral")
         setStrategy(new AggressivePlayerStrategy());
 }
@@ -182,6 +186,7 @@ int *Player::getReinforcementPool() const
 {
     return reinforcementPool;
 }
+// Return a copy of the territories currently owned by this player.
 std::vector<Territory *> Player::getTerritories() const { return *territories; }
 // setter for reinforcementPool
 void Player::setReinforcementPool(int troops)

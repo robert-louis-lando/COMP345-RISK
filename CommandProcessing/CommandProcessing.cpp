@@ -106,6 +106,7 @@ Command *CommandProcessor::validate(string &command)
     stream >> name;
     if (name == "addplayer")
     {
+        // Keep the full player specification for name and strategy validation.
         stream >> ws;
         getline(stream, argument);
     }
