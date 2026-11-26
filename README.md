@@ -2,7 +2,7 @@
 
 ## Build and test the components
 
-Run commands from the repository root (`COMP345-RISK`). You need CMake 3.16+ and a C++17 compiler. CMake builds all five drivers. `ctest` runs `MapDriver`, `PlayerDriver`, `CardsDriver`, `OrdersDriver`, and the command-input unit tests. Run `GameEngineDriver` manually with console or file input.
+Run commands from the repository root (`COMP345-RISK`). You need CMake 3.16+ and a C++17 compiler. CMake defines targets for all drivers. `ctest` runs `MapDriver`, `PlayerDriver`, `CardsDriver`, `OrdersDriver`, `OrderDriver2`, and the command-input unit tests. Run interactive drivers manually.
 
 ### macOS (Terminal, default Makefiles generator)
 
@@ -36,6 +36,33 @@ ctest --test-dir build -C Debug -R '^map_driver$' --output-on-failure
 
 Visual Studio places executables under `build/Debug/` (or `build/Release/` if you use `--config Release` and `-C Release`). On macOS with the Xcode generator, also use `--config Debug` and `-C Debug`, and find the executable under `build/Debug/`.
 
+## Build and run the assignment 2 drivers
+
+Build just the assignment 2 drivers from the repository root:
+
+```sh
+cmake -S . -B build
+cmake --build build --target part2_drivers
+```
+
+This builds `CommandProcessingDriver`, `GameEngineDriverPart2`, `OrderDriver2`, and `LogObserverDriver`. Run them with:
+
+```sh
+./build/CommandProcessingDriver -console
+# Or read commands from a file:
+./build/CommandProcessingDriver -file commands.txt
+
+./build/GameEngineDriverPart2
+./build/OrderDriver2
+./build/LogObserverDriver -console
+# Or read commands from a file:
+./build/LogObserverDriver -file commands.txt
+```
+
+Run from the repository root so relative map and command-file paths resolve correctly. On Visual Studio, add `--config Debug` when building and use `build/Debug/<driver>.exe` when running.
+
+The legacy `PlayerDriver` currently calls a removed `issueOrder(string)` overload, so a full build fails until that source is updated. The `part2_drivers` target does not depend on it.
+
 ## Run the other drivers
 
 After building, run any driver directly:
@@ -55,8 +82,6 @@ The Game Engine defaults to console input. Select the input source explicitly wi
 ```
 
 A command file contains one command per line, processed in order through `FileCommandProcessorAdapter` and `FileLineReader`. File EOF ends the program cleanly; rejected commands are recorded with an error effect and processing continues. Quote command-file paths containing spaces. Unknown flags or missing filenames print usage. In console mode, press **Ctrl+C** to stop immediately; `quit` exits normally when the engine is in the `Win` state.
-
-The engine still performs state transitions, not the full map/player gameplay actions.
 
 To build only one driver, use its target name, for example:
 

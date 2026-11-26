@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 3.16)
 project(COMP345_RISK LANGUAGES CXX)
 
 # Each component has its own executable because every driver defines main().
-add_executable(MapDriver map/Map.cpp map/MapDriver.cpp map/Map.h)
+add_executable(MapDriver
+    map/Map.cpp map/MapDriver.cpp map/Map.h
+    Player/Player.cpp Player/Player.h
+    Orders/Orders.cpp Orders/Orders.h
+    Cards/Cards.cpp Cards/Cards.h
+    LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h)
+target_include_directories(MapDriver PRIVATE map Player Orders Cards)
 add_executable(PlayerDriver
     Player/Player.cpp Player/PlayerDriver.cpp Player/Player.h
     Orders/Orders.cpp Orders/Orders.h Cards/Cards.cpp Cards/Cards.h
@@ -73,6 +79,26 @@ target_include_directories(GameEngineDriverPart2 PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/Player"
 )
 
+add_executable(CommandProcessingDriver
+    CommandProcessing/CommandProcessingDriver.cpp
+    CommandProcessing/CommandProcessing.cpp
+    GameEngine/GameEngine.cpp
+    Cards/Cards.cpp
+    map/Map.cpp
+    Player/Player.cpp
+    Orders/Orders.cpp
+    LoggingObserver/LoggingObserver.cpp
+)
+target_include_directories(CommandProcessingDriver PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/CommandProcessing"
+    "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Cards"
+    "${CMAKE_CURRENT_SOURCE_DIR}/map"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Player"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Orders"
+    "${CMAKE_CURRENT_SOURCE_DIR}/LoggingObserver"
+)
+
 add_executable(CommandInputTests
     tests/CommandInputTests.cpp
     GameEngine/GameEngine.cpp
@@ -119,7 +145,12 @@ target_include_directories(LogObserverDriver PRIVATE
 )
 
 
-foreach(driver IN ITEMS MapDriver PlayerDriver CardsDriver OrdersDriver OrderDriver2 GameEngineDriver GameEngineDriverPart2 CommandInputTests LogObserverDriver)
+# Build the assignment 2 drivers without requiring the legacy drivers.
+add_custom_target(part2_drivers
+    DEPENDS CommandProcessingDriver GameEngineDriverPart2 OrderDriver2 LogObserverDriver
+)
+
+foreach(driver IN ITEMS MapDriver PlayerDriver CardsDriver OrdersDriver OrderDriver2 GameEngineDriver GameEngineDriverPart2 CommandProcessingDriver CommandInputTests LogObserverDriver)
     set_target_properties(${driver} PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED YES
@@ -141,7 +172,8 @@ set_tests_properties(orders_driver PROPERTIES
 set_tests_properties(order_driver2 PROPERTIES
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 add_test(NAME command_input COMMAND CommandInputTests)
-# GameEngineDriver is interactive, so it must not run unattended through CTest.
+# GameEngineDriver, GameEngineDriverPart2, CommandProcessingDriver, and
+# LogObserverDriver accept interactive input, so run them manually, not via CTest.
 
 # Build and run the map driver: cmake --build build --target run
 add_custom_target(run
