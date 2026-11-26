@@ -31,7 +31,7 @@ public:
     const char *name() const override;
 };
 
-/** Concentrates reinforcements and attacks from the strongest territory. */
+/** Concentrates reinforcements and attacks from the strongest territory bordering an enemy. */
 class AggressivePlayerStrategy : public PlayerStrategy
 {
 public:

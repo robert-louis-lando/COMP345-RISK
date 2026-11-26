@@ -11,14 +11,19 @@ PlayerStrategy::~PlayerStrategy() = default;
 
 namespace
 {
-//Collect adjacent enemy territories once, even when several owned territories touch them.
+bool isEnemyTarget(const Territory *territory, const Player &player)
+{
+    return territory != nullptr && territory->getOwner() != &player;
+}
+
+// Collect adjacent enemy territories once, even when several owned territories touch them.
 std::vector<Territory *> adjacentEnemies(const Player &player)
 {
     std::vector<Territory *> result;
     std::unordered_set<Territory *> seen;
     for (Territory *owned : player.getTerritories())
         for (Territory *neighbor : owned->getAdjacentTerritories())
-            if (neighbor != nullptr && neighbor->getOwner() != &player && seen.insert(neighbor).second)
+            if (isEnemyTarget(neighbor, player) && seen.insert(neighbor).second)
                 result.push_back(neighbor);
     return result;
 }
@@ -29,6 +34,21 @@ Territory *strongest(const std::vector<Territory *> &territories)
     if (territories.empty()) return nullptr;
     return *std::max_element(territories.begin(), territories.end(),
         [](const Territory *a, const Territory *b) { return a->getArmyCount() < b->getArmyCount(); });
+}
+
+// Pick the strongest territory that has an enemy neighbor. Ties keep ownership order.
+Territory *strongestFrontline(const Player &player)
+{
+    Territory *source = nullptr;
+    for (Territory *owned : player.getTerritories())
+    {
+        const auto &neighbors = owned->getAdjacentTerritories();
+        if ((source == nullptr || owned->getArmyCount() > source->getArmyCount()) &&
+            std::any_of(neighbors.begin(), neighbors.end(),
+                [&player](Territory *neighbor) { return isEnemyTarget(neighbor, player); }))
+            source = owned;
+    }
+    return source;
 }
 
 // Return the owned territory with the fewest armies, or nullptr if there are none.
@@ -61,19 +81,24 @@ const char *HumanPlayerStrategy::name() const { return "Human"; }
 
 // Make an independent copy of the aggressive strategy.
 PlayerStrategy *AggressivePlayerStrategy::clone() const { return new AggressivePlayerStrategy(*this); }
-//Reinforce the strongest territory, then use its armies to attack neighbors.
+// Reinforce the strongest frontline territory and attack only its neighbors.
 void AggressivePlayerStrategy::issueOrder(Player &p, Deck *, const std::vector<Player *> &)
 {
-    auto owned = p.getTerritories();
-    Territory *source = strongest(owned);
+    Territory *source = strongestFrontline(p);
+    if (source == nullptr)
+    {
+        deploy(p, strongest(p.getTerritories()));
+        return;
+    }
+
     deploy(p, source);
-    if (source == nullptr) return;
     std::cout << "  Aggressive: reinforcing " << source->getName()
               << " and attacking from it.\n";
     int available = source->getArmyCount() + (p.getReinforcementPool() ? *p.getReinforcementPool() : 0) - 1;
-    for (Territory *target : toAttack(p))
+    for (Territory *target : source->getAdjacentTerritories())
     {
         if (available <= 0) break;
+        if (!isEnemyTarget(target, p)) continue;
         int commitment = std::min(available, std::max(1, target->getArmyCount() * 2 + 1));
         std::cout << "  Aggressive: advance " << commitment << " from "
                   << source->getName() << " to " << target->getName() << ".\n";
@@ -81,8 +106,15 @@ void AggressivePlayerStrategy::issueOrder(Player &p, Deck *, const std::vector<P
         available -= commitment;
     }
 }
-// List adjacent enemy territories as attack targets
-std::vector<Territory *> AggressivePlayerStrategy::toAttack(const Player &p) const { return adjacentEnemies(p); }
+// List only the enemy neighbors of the strongest frontline territory.
+std::vector<Territory *> AggressivePlayerStrategy::toAttack(const Player &p) const
+{
+    std::vector<Territory *> targets;
+    if (Territory *source = strongestFrontline(p))
+        for (Territory *neighbor : source->getAdjacentTerritories())
+            if (isEnemyTarget(neighbor, p)) targets.push_back(neighbor);
+    return targets;
+}
 // Prioritize stronger territories when returning defense targets
 std::vector<Territory *> AggressivePlayerStrategy::toDefend(const Player &p) const
 {
@@ -160,7 +192,11 @@ void CheaterPlayerStrategy::issueOrder(Player &p, Deck *, const std::vector<Play
         std::cout << "    Captured " << target->getName();
         if (oldOwner != nullptr) std::cout << " from " << *oldOwner->getName();
         std::cout << ".\n";
-        if (oldOwner) oldOwner->removeTerritory(target);
+        if (oldOwner)
+        {
+            oldOwner->notifyAttacked();
+            oldOwner->removeTerritory(target);
+        }
         p.addTerritory(target);
         p.markTerritoryConquered();
     }
