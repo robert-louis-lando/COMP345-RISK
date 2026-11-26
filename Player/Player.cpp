@@ -1,5 +1,6 @@
 #include "Player.h"
 #include "Cards.h"
+#include "PlayerStrategies.h"
 #include "../map/Map.h"
 #include <algorithm>
 #include <stdexcept>
@@ -18,6 +19,8 @@ Player::Player(const std::string &name)
     orders = new OrdersList();
     negotiatedPlayers = new std::vector<Player *>();
     conqueredTerritoryThisTurn = new bool(false);
+    // Players use human decisions unless a strategy is selected explicitly.
+    strategy = new HumanPlayerStrategy();
 }
 
 // copy constructor, copy of a player
@@ -34,6 +37,7 @@ Player::Player(const Player &other)
     orders = new OrdersList(*other.orders);
     negotiatedPlayers = new std::vector<Player *>(*other.negotiatedPlayers);
     conqueredTerritoryThisTurn = new bool(*other.conqueredTerritoryThisTurn);
+    strategy = other.strategy == nullptr ? new HumanPlayerStrategy() : other.strategy->clone();
 }
 
 // replace player with other player data
@@ -52,6 +56,8 @@ Player &Player::operator=(const Player &other)
         *orders = *other.orders;
         *negotiatedPlayers = *other.negotiatedPlayers;
         *conqueredTerritoryThisTurn = *other.conqueredTerritoryThisTurn;
+        delete strategy;
+        strategy = other.strategy == nullptr ? new HumanPlayerStrategy() : other.strategy->clone();
     }
 
     return *this;
@@ -70,6 +76,7 @@ Player::~Player()
     delete orders;
     delete negotiatedPlayers;
     delete conqueredTerritoryThisTurn;
+    delete strategy;
 }
 
 // add territory to owned territories
@@ -119,6 +126,20 @@ void Player::markTerritoryConquered() { *conqueredTerritoryThisTurn = true; }
 bool Player::hasConqueredTerritoryThisTurn() const { return *conqueredTerritoryThisTurn; }
 // Reset the conquest marker for the next turn.
 void Player::clearConquestFlag() { *conqueredTerritoryThisTurn = false; }
+// Replace the owned strategy, rejecting null strategies.
+void Player::setStrategy(PlayerStrategy *newStrategy)
+{
+    if (newStrategy == nullptr) throw std::invalid_argument("Player strategy cannot be null");
+    if (strategy != newStrategy) { delete strategy; strategy = newStrategy; }
+}
+// Return the strategy without transferring ownership.
+const PlayerStrategy *Player::getStrategy() const { return strategy; }
+void Player::notifyAttacked()
+{
+    // Neutral players become aggressive after their first attack.
+    if (strategy != nullptr && std::string(strategy->name()) == "Neutral")
+        setStrategy(new AggressivePlayerStrategy());
+}
 
 // add territory to the list of territories they can attack
 void Player::addTerritoryToAttack(Territory *territory)
@@ -165,6 +186,8 @@ int *Player::getReinforcementPool() const
 {
     return reinforcementPool;
 }
+// Return a copy of the territories currently owned by this player.
+std::vector<Territory *> Player::getTerritories() const { return *territories; }
 // setter for reinforcementPool
 void Player::setReinforcementPool(int troops)
 {
@@ -179,32 +202,22 @@ void Player::setReinforcementPool(int troops)
 // return player list of territories to defend
 std::vector<Territory *> Player::toDefend() const
 {
-    return *territories;
+    return strategy->toDefend(*this);
 }
 
 // return player's list of territories to attack
 std::vector<Territory *> Player::toAttack() const
 {
-    std::vector<Territory *> neighboringTerritories;
-    std::unordered_set<Territory *> alreadyAdded;
-
-    for (Territory *territory : *territories)
-    {
-        for (Territory *neighbor : territory->getAdjacentTerritories())
-        {
-            if (ownedTerritories->count(neighbor) == 0 &&
-                alreadyAdded.insert(neighbor).second)
-            {
-                neighboringTerritories.push_back(neighbor);
-            }
-        }
-    }
-
-    return neighboringTerritories;
+    return strategy->toAttack(*this);
 }
 
 // Issue order loop
 void Player::issueOrder(Deck *deck, std::vector<Player *> players)
+{
+    strategy->issueOrder(*this, deck, players);
+}
+
+void Player::issueHumanOrders(Deck *deck, std::vector<Player *> players)
 {
     std::cout << "\nPlayer: " << *name << '\n';
     std::cout << "\n"

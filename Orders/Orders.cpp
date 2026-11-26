@@ -8,14 +8,16 @@
 #include <sstream> 
 
 
-// Locate a territory visible to the player, including adjacent enemy targets.
+// Use the current board, not strategy priorities, to resolve queued order targets.
 static Territory *findTerritory(Player *player, const string &name)
 {
     if (player == nullptr) return nullptr;
-    for (Territory *territory : player->toDefend())
-        if (territory != nullptr && territory->getName() == name) return territory;
-    for (Territory *territory : player->toAttack())
-        if (territory != nullptr && territory->getName() == name) return territory;
+    const auto owned = player->getTerritories();
+    for (Territory *territory : owned)
+        if (territory->getName() == name) return territory;
+    for (Territory *territory : owned)
+        for (Territory *neighbor : territory->getAdjacentTerritories())
+            if (neighbor != nullptr && neighbor->getName() == name) return neighbor;
     return nullptr;
 }
 
@@ -246,6 +248,7 @@ void Advance::execute() {
                 source->setArmyCount(source->getArmyCount() + *numberOfArmies);
                 *executed = false; *effect = "Advance blocked by negotiation."; Notify(this); return;
             } else {
+                if (target->getOwner() != nullptr) target->getOwner()->notifyAttacked();
                 int attackers = *numberOfArmies;
                 int defenders = target->getArmyCount();
                 static std::mt19937 rng(std::random_device{}());
@@ -344,6 +347,7 @@ void Bomb::execute() {
     if (validate()) {
         if (issuer != nullptr) {
             Territory *target = findTerritory(issuer, *targetTerritory);
+            if (target->getOwner() != nullptr) target->getOwner()->notifyAttacked();
             target->setArmyCount(target->getArmyCount() / 2);
         }
         *executed = true;

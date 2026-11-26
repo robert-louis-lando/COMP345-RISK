@@ -10,7 +10,7 @@ add_executable(MapDriver
     LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h)
 target_include_directories(MapDriver PRIVATE map Player Orders Cards)
 add_executable(PlayerDriver
-    Player/Player.cpp Player/PlayerDriver.cpp Player/Player.h
+    Player/Player.cpp Player/PlayerStrategies.cpp Player/PlayerDriver.cpp Player/Player.h Player/PlayerStrategies.h
     Orders/Orders.cpp Orders/Orders.h Cards/Cards.cpp Cards/Cards.h
     map/Map.cpp map/Map.h
     LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h) 
@@ -18,13 +18,13 @@ target_include_directories(PlayerDriver PRIVATE Player Orders Cards map)
 add_executable(CardsDriver Cards/Cards.cpp Cards/CardsDriver.cpp Cards/Cards.h)
 add_executable(OrdersDriver
     Orders/Orders.cpp Orders/OrdersDriver.cpp Orders/Orders.h
-    Player/Player.cpp Player/Player.h Cards/Cards.cpp Cards/Cards.h
+    Player/Player.cpp Player/PlayerStrategies.cpp Player/Player.h Player/PlayerStrategies.h Cards/Cards.cpp Cards/Cards.h
     map/Map.cpp map/Map.h
     LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h)
 target_include_directories(OrdersDriver PRIVATE Orders Player Cards map)
 add_executable(OrderDriver2
     Orders/Orders.cpp Orders/OrderDriver2.cpp Orders/Orders.h
-    Player/Player.cpp Player/Player.h Cards/Cards.cpp Cards/Cards.h
+    Player/Player.cpp Player/PlayerStrategies.cpp Player/Player.h Player/PlayerStrategies.h Cards/Cards.cpp Cards/Cards.h
     map/Map.cpp map/Map.h GameEngine/GameEngine.cpp GameEngine/GameEngine.h
     CommandProcessing/CommandProcessing.cpp CommandProcessing/CommandProcessing.h
     LoggingObserver/LoggingObserver.cpp LoggingObserver/LoggingObserver.h)
@@ -40,7 +40,9 @@ add_executable(GameEngineDriver
     map/Map.cpp
     map/Map.h
     Player/Player.cpp
+    Player/PlayerStrategies.cpp
     Player/Player.h
+    Player/PlayerStrategies.h
     Orders/Orders.cpp
     Orders/Orders.h
     LoggingObserver/LoggingObserver.cpp  
@@ -65,7 +67,9 @@ add_executable(GameEngineDriverPart2
     map/Map.cpp
     map/Map.h
     Player/Player.cpp
+    Player/PlayerStrategies.cpp
     Player/Player.h
+    Player/PlayerStrategies.h
     Orders/Orders.cpp
     Orders/Orders.h
     LoggingObserver/LoggingObserver.cpp   
@@ -106,6 +110,7 @@ add_executable(CommandInputTests
     Cards/Cards.cpp
     map/Map.cpp
     Player/Player.cpp
+    Player/PlayerStrategies.cpp
     Orders/Orders.cpp
     LoggingObserver/LoggingObserver.cpp
 )
@@ -130,7 +135,9 @@ add_executable(LogObserverDriver
     map/Map.cpp
     map/Map.h
     Player/Player.cpp
+    Player/PlayerStrategies.cpp
     Player/Player.h
+    Player/PlayerStrategies.h
     Orders/Orders.cpp
     Orders/Orders.h
 )

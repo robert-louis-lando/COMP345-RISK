@@ -21,6 +21,7 @@ Rquirements to fulfill for players:
 class Territory;
 class Card;
 class Deck;
+class PlayerStrategy;
 
 // Class for players in the game, each players
 class Player
@@ -35,6 +36,7 @@ private:
     int *reinforcementPool;
     std::vector<Player *> *negotiatedPlayers;
     bool *conqueredTerritoryThisTurn;
+    PlayerStrategy *strategy;
 
     Card *removeCard(const std::string &cardType);
 
@@ -60,6 +62,11 @@ public:
     void markTerritoryConquered();
     bool hasConqueredTerritoryThisTurn() const;
     void clearConquestFlag();
+    // Replace the active decision strategy; Player takes ownership of it.
+    void setStrategy(PlayerStrategy *newStrategy);
+    const PlayerStrategy *getStrategy() const;
+    // Change a neutral player to aggressive when another player attacks it.
+    void notifyAttacked();
     // add territory to  player's territories to attack
     void addTerritoryToAttack(Territory *territory);
 
@@ -70,6 +77,7 @@ public:
     // getter and setter
     const std::string *getName() const;
     int *getReinforcementPool() const;
+    std::vector<Territory *> getTerritories() const;
 
     void setReinforcementPool(int troops);
 
@@ -81,6 +89,8 @@ public:
 
     // Issue one order and return whether another order may be issued.
     void issueOrder(Deck *deck, std::vector<Player *> players);
+    // Human strategy's interactive implementation of the issuing phase.
+    void issueHumanOrders(Deck *deck, std::vector<Player *> players);
     // Add an already constructed order to this player's execution queue.
     void issueOrder(Order *order);
     // returns orders

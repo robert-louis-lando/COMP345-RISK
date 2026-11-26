@@ -81,7 +81,7 @@ The Game Engine defaults to console input. Select the input source explicitly wi
 ./build/GameEngineDriver -file commands.txt
 ```
 
-A command file contains one command per line, processed in order through `FileCommandProcessorAdapter` and `FileLineReader`. File EOF ends the program cleanly; rejected commands are recorded with an error effect and processing continues. Quote command-file paths containing spaces. Unknown flags or missing filenames print usage. In console mode, press **Ctrl+C** to stop immediately; `quit` exits normally when the engine is in the `Win` state.
+A command file contains one command per line, processed in order through `FileCommandProcessorAdapter` and `FileLineReader`. File EOF ends the program cleanly; rejected commands are recorded with an error effect and processing continues. Quote command-file paths containing spaces. Unknown flags or missing filenames print usage. In console mode, press **Ctrl+C** to stop immediately; `end` exits normally when the engine is in the `Win` state.
 
 To build only one driver, use its target name, for example:
 

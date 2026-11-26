@@ -78,7 +78,7 @@ namespace {
     void testAdapter(const std::filesystem::path& directory){
         const auto file = directory / "commands.txt";
         const auto empty = directory / "empty.txt";
-        writeFile(file, "unknown\nloadmap\nloadmap world.map\nvalidatemap\naddplayer Alice\n"
+        writeFile(file, "unknown\nloadmap\nloadmap world.map\nvalidatemap\naddplayer Alice Human\n"
                         "gamestart\nissueorder\nendissueorders\nwin\nreplay\n");
         FileCommandProcessorAdapter adapter(file.string());
         CommandProcessor& base = adapter;

@@ -103,10 +103,20 @@ Command *CommandProcessor::validate(string &command)
     string name;
     string argument;
     string extra;
-    stream >> name >> argument;
+    stream >> name;
+    if (name == "addplayer")
+    {
+        // Keep the full player specification for name and strategy validation.
+        stream >> ws;
+        getline(stream, argument);
+    }
+    else
+    {
+        stream >> argument;
+    }
 
     string effect;
-    if (stream >> extra)
+    if (name != "addplayer" && stream >> extra)
         effect = "Too many arguments for command: " + name;
     else
         GameEngine::getInstance().canExecute(name, argument, &effect);
