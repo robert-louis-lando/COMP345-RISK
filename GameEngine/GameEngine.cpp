@@ -53,7 +53,7 @@ namespace
     {
         static const char *knownCommands[] = {
             "loadmap", "validatemap", "addplayer", "gamestart", "replay", "quit",
-            "issueorder", "endissueorders", "execorder", "endexecorders", "win"};
+            "issueorder", "endissueorders", "execorder", "endexecorders", "win", "tournament"};
         bool known = false;
         for (const char *name : knownCommands)
         {
@@ -65,7 +65,7 @@ namespace
         }
 
         string error;
-        bool needsArgument = command == "loadmap" || command == "addplayer";
+        bool needsArgument = command == "loadmap" || command == "addplayer" || command == "tournament";
         if (command.empty())
         {
             error = "No command provided";
@@ -76,8 +76,21 @@ namespace
         }
         else if (needsArgument && !hasArgument(argument))
         {
-            error = command == "loadmap" ? "Missing map filename" : "Use: addplayer <name> <strategy>";
+              error = command == "loadmap"      ? "Missing map filename"
+                    : command == "addplayer" ? "Use: addplayer <name> <strategy>"
+                    : "Use: tournament -M <maps> -P <strategies> -G <1-5> -D <10-50>";
         }
+
+        else if (command == "tournament")
+        {
+            // Syntax and limits are checked by the command processing module
+            vector<string> maps;
+            vector<string> strategies;
+            int games = 0;
+            int maxTurns = 0;
+            parseTournamentCommand(argument, maps, strategies, games, maxTurns, error);
+        }
+
         else if (command == "addplayer")
         {
             string playerName;
@@ -91,7 +104,7 @@ namespace
         {
             error = "Unexpected argument for command: " + command;
         }
-        else if (!allowed)
+         if (error.empty() && !allowed)
         {
             error = "Command '" + command + "' is not allowed in state '" + state + "'";
         }
@@ -118,6 +131,7 @@ GameEngine::GameEngine()
     this->map = new Map();
     this->commandProcessor = new CommandProcessor();
     this->running = true;
+    this->tournamentReport = new string();
 }
 // releases both state pointer and phase pointer
 GameEngine::~GameEngine()
@@ -131,6 +145,7 @@ GameEngine::~GameEngine()
         delete player;
     }
     delete commandProcessor;
+    delete tournamentReport; 
 }
 // custom output stream to display information a certain way of the game engine
 std::ostream &operator<<(std::ostream &os, const GameEngine &gameEngine)
@@ -150,7 +165,7 @@ void GameEngine::executeCommand(Command &command)
         string argument;
         string extra;
         stream >> name;
-        if (name == "addplayer")
+         if (name == "addplayer" || name == "tournament")
         {
             stream >> ws;
             getline(stream, argument);
@@ -175,17 +190,21 @@ void GameEngine::executeCommand(Command &command)
         currentState->transition(&name, this, argument);
 
         // Only claim the state/phase change that was actually performed.
-        string effect = name == "quit"
-                            ? "Game ended"
-                            : "State: " + oldState + " -> " + *getCurrentState() + "; Phase: " + oldPhase + " -> " + *getCurrentPhase();
-        command.saveEffect(effect);
-    }
-    catch (const std::exception &error)
-    {
-        string effect = "Failed to execute command: " + string(error.what());
-        command.saveEffect(effect);
-        throw;
-    }
+        string effect;
+                if (name == "quit")
+                    effect = "Game ended";
+                else if (name == "tournament")
+                    effect = *tournamentReport;
+                else
+                    effect = "State: " + oldState + " -> " + *getCurrentState() + "; Phase: " + oldPhase + " -> " + *getCurrentPhase();
+                command.saveEffect(effect);
+            }
+            catch (const std::exception &error)
+            {
+                string effect = "Failed to execute command: " + string(error.what());
+                command.saveEffect(effect);
+                throw;
+            }
 
     // Return to the driver so it can print the saved effect and release the input source.
     if (name == "quit")
@@ -524,12 +543,18 @@ bool GameEngine::checkPlayPhaseResult()
 }
 
 // Play phase
-void GameEngine::playPhase()
+void GameEngine::playPhase(int maxTurns)
 {
     int turn = 0;
     while (running && currentPhase != nullptr &&
            *currentPhase->getName() == "Play")
     {
+         if (maxTurns > 0 && turn >= maxTurns)
+        {
+            std::cout << "Turn limit of " << maxTurns << " reached: the game is a draw.\n";
+            return;
+        }
+
         ++turn;
         std::cout << "\n========================================\n"
                   << "TURN " << turn << '\n'
@@ -551,6 +576,148 @@ void GameEngine::playPhase()
         }
     }
 }
+
+const std::string *GameEngine::getTournamentReport() const
+{
+    return tournamentReport;
+}
+
+// TOURNAMENT: Clear the previous game so a new tournament game starts from the Start state.
+void GameEngine::resetGame()
+{
+    for (Player *player : players)
+    {
+        delete player;
+    }
+    players.clear();
+    delete deck;
+    deck = new Deck(10, 0, 10, 10, 10);
+    setPhase(new Startup());
+    setState(new Start());
+}
+
+// TOURNAMENT: Play one game of the tournament automatically, going through the same states as a normal game.
+std::string GameEngine::playTournamentGame(const std::string &mapFile, const std::vector<std::string> &strategies,
+                                           int maxTurns)
+{
+    resetGame();
+
+    std::string error;
+    if (!loadMap(mapFile, error))
+    {
+        return "Invalid map";
+    }
+    setState(new MapLoaded());
+
+    if (!validateMap())
+    {
+        return "Invalid map";
+    }
+    setState(new MapValidated());
+
+    for (const std::string &strategy : strategies)
+    {
+        addPlayer(strategy, strategy);
+        setState(new PlayersAdded());
+    }
+
+    gameStart();
+    setState(new AssignReinforcement());
+    setPhase(new Play());
+    playPhase(maxTurns);
+
+    if (*currentState->getName() == "Win" && players.size() == 1)
+    {
+        return *players.front()->getName();
+    }
+    return "Draw";
+}
+
+// TOURNAMENT: Play G games on each of the M maps with the chosen strategies, then build and log the results table.
+void GameEngine::runTournament(const std::vector<std::string> &maps, const std::vector<std::string> &strategies,
+                               int games, int maxTurns)
+{
+    std::vector<std::vector<std::string>> results;
+    std::cout << "\n=== Tournament started: " << maps.size() << " map(s), " << games
+              << " game(s) per map, max " << maxTurns << " turns ===\n";
+
+    for (const std::string &mapFile : maps)
+    {
+        std::vector<std::string> row;
+        for (int game = 1; game <= games; ++game)
+        {
+            std::streambuf *console = std::cout.rdbuf(nullptr);
+            std::string result;
+            try
+            {
+                result = playTournamentGame(mapFile, strategies, maxTurns);
+            }
+            catch (const std::exception &error)
+            {
+                result = std::string("Error: ") + error.what();
+            }
+            std::cout.rdbuf(console);
+            std::cout.clear();
+
+            std::cout << "  " << mapFile << " - game " << game << ": " << result
+                      << (result == "Draw" ? " (no winner after " + std::to_string(maxTurns) + " turns)" : "") << '\n';
+            row.push_back(result);
+
+            if (result == "Invalid map")
+            {
+                while (static_cast<int>(row.size()) < games)
+                {
+                    row.push_back(result);
+                }
+                break;
+            }
+        }
+        results.push_back(row);
+    }
+
+    resetGame();
+
+    std::ostringstream report;
+    report << "Tournament mode:\nM: ";
+    for (std::size_t i = 0; i < maps.size(); ++i)
+    {
+        report << (i > 0 ? ", " : "") << maps[i];
+    }
+    report << "\nP: ";
+    for (std::size_t i = 0; i < strategies.size(); ++i)
+    {
+        report << (i > 0 ? ", " : "") << strategies[i];
+    }
+    report << "\nG: " << games << "\nD: " << maxTurns << "\n\nResults:\n";
+
+    std::size_t mapColumn = 6;
+    for (const std::string &mapFile : maps)
+    {
+        mapColumn = std::max(mapColumn, mapFile.size() + 2);
+    }
+    const int resultColumn = 14;
+    report << std::left << std::setw(static_cast<int>(mapColumn)) << "";
+    for (int game = 1; game <= games; ++game)
+    {
+        report << std::setw(resultColumn) << ("Game " + std::to_string(game));
+    }
+    report << '\n';
+    for (std::size_t i = 0; i < maps.size(); ++i)
+    {
+        report << std::setw(static_cast<int>(mapColumn)) << maps[i];
+        for (const std::string &result : results[i])
+        {
+            report << std::setw(resultColumn) << result;
+        }
+        report << '\n';
+    }
+
+    *tournamentReport = report.str();
+    std::cout << '\n' << *tournamentReport;
+
+    setState(new Win());
+}
+
 
 // called to start the game
 void GameEngine::startupPhase()
@@ -783,7 +950,7 @@ std::ostream &operator<<(std::ostream &os, const Start &start)
 // transition checks if the passed command is correct for a transition or else throws invalid argument exception
 bool Start::canExecute(const string &command, const string &argument, string *effect) const
 {
-    bool valid = command == "loadmap" && hasArgument(argument);
+       bool valid = (command == "loadmap" || command == "tournament") && hasArgument(argument); 
     return setCheckEffect(command, argument, *getName(), valid, effect);
 }
 void Start::transition(const string *command, GameEngine *gameEngine, const string &argument)
@@ -792,6 +959,21 @@ void Start::transition(const string *command, GameEngine *gameEngine, const stri
     {
         throw invalid_argument("Wrong command for this state");
     }
+    if (*command == "tournament")
+    {
+        vector<string> maps;
+        vector<string> strategies;
+        int games = 0;
+        int maxTurns = 0;
+        string error;
+        if (!parseTournamentCommand(argument, maps, strategies, games, maxTurns, error))
+        {
+            throw invalid_argument(error);
+        }
+        gameEngine->runTournament(maps, strategies, games, maxTurns);
+        return;
+    }
+    
     std::string error;
     if (!gameEngine->loadMap(argument, error))
     {

@@ -50,7 +50,15 @@ public:
     Map *getMap() const;
     const std::vector<Player *> &getPlayers() const;
     // repeatedly runs the Play phase turn cycle
-    void playPhase();
+    void playPhase(int maxTurns = 0);
+
+ 
+    //plays every game of a tournament without user interaction and stores the results report
+    void runTournament(const std::vector<std::string> &maps, const std::vector<std::string> &strategies,
+                       int games, int maxTurns);
+  //returns the report of the last tournament played
+    const std::string *getTournamentReport() const;
+
     // removes eliminated players and detects the game winner
     bool checkPlayPhaseResult();
     // getters
@@ -82,6 +90,15 @@ private:
     // command processor to read commands from the console or from a file
     CommandProcessor *commandProcessor;
     bool running;
+
+    
+    // results table of the last tournament, saved as the tournament command's effect
+    std::string *tournamentReport;
+
+    //deletes the players, gives a new deck and goes back to the Start state for a new game
+    void resetGame();
+    //plays one tournament game on a map and returns the winner's name, "Draw" or "Invalid map"
+    std::string playTournamentGame(const std::string &mapFile, const std::vector<std::string> &strategies,int maxTurns);
 };
 
 // parent class phase which contains the string pointer name
