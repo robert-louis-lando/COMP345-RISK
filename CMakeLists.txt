@@ -151,13 +151,44 @@ target_include_directories(LogObserverDriver PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/Orders"
 )
 
+# TOURNAMENT ADDED: build target for the tournament driver
+add_executable(TournamentDriver
+    GameEngine/TournamentDriver.cpp
+    GameEngine/GameEngine.cpp
+    GameEngine/GameEngine.h
+    CommandProcessing/CommandProcessing.cpp
+    CommandProcessing/CommandProcessing.h
+    Cards/Cards.cpp
+    Cards/Cards.h
+    map/Map.cpp
+    map/Map.h
+    Player/Player.cpp
+    Player/PlayerStrategies.cpp
+    Player/Player.h
+    Player/PlayerStrategies.h
+    Orders/Orders.cpp
+    Orders/Orders.h
+    LoggingObserver/LoggingObserver.cpp
+    LoggingObserver/LoggingObserver.h
+)
+target_include_directories(TournamentDriver PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/GameEngine"
+    "${CMAKE_CURRENT_SOURCE_DIR}/CommandProcessing"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Cards"
+    "${CMAKE_CURRENT_SOURCE_DIR}/map"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Player"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Orders"
+    "${CMAKE_CURRENT_SOURCE_DIR}/LoggingObserver"
+)
+
+
 
 # Build the assignment 2 drivers without requiring the legacy drivers.
 add_custom_target(part2_drivers
     DEPENDS CommandProcessingDriver GameEngineDriverPart2 OrderDriver2 LogObserverDriver
 )
 
-foreach(driver IN ITEMS MapDriver PlayerDriver CardsDriver OrdersDriver OrderDriver2 GameEngineDriver GameEngineDriverPart2 CommandProcessingDriver CommandInputTests LogObserverDriver)
+foreach(driver IN ITEMS TournamentDriver MapDriver PlayerDriver CardsDriver OrdersDriver OrderDriver2 GameEngineDriver GameEngineDriverPart2 CommandProcessingDriver CommandInputTests LogObserverDriver)
     set_target_properties(${driver} PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED YES

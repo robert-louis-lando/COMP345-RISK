@@ -1,10 +1,159 @@
 #include "CommandProcessing.h"
 #include "GameEngine.h"
+
+//added this for std::find
+#include <algorithm>
+
+
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
 using namespace std;
+
+
+namespace
+{
+    // TOURNAMENT: Tournament limits given in the assignment description.
+    const int MIN_MAPS = 1, MAX_MAPS = 5;
+    const int MIN_PLAYERS = 2, MAX_PLAYERS = 4;
+    const int MIN_GAMES = 1, MAX_GAMES = 5;
+    const int MIN_TURNS = 10, MAX_TURNS = 50;
+
+    // TOURNAMENT: Return true if the token is one of the four tournament flags.
+    bool isTournamentFlag(const string &token)
+    {
+        return token == "-M" || token == "-P" || token == "-G" || token == "-D";
+    }
+
+    // TOURNAMENT: Convert a whole token to an int; fails on text such as "4x" or "".
+    bool toInt(const string &token, int &value)
+    {
+        if (token.empty() || token.find_first_not_of("0123456789") != string::npos || token.size() > 6)
+            return false;
+        value = stoi(token);
+        return true;
+    }
+
+    // TOURNAMENT: Map a strategy name (any case) to its display name; empty if not a computer strategy.
+    string computerStrategyName(string strategy)
+    {
+        for (char &c : strategy)
+            c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+        if (strategy == "aggressive") return "Aggressive";
+        if (strategy == "benevolent") return "Benevolent";
+        if (strategy == "neutral") return "Neutral";
+        if (strategy == "cheater") return "Cheater";
+        return "";
+    }
+}
+
+// TOURNAMENT: Parse "-M <maps> -P <strategies> -G <games> -D <turns>" and check every limit.
+bool parseTournamentCommand(const string &argument, vector<string> &maps, vector<string> &strategies,
+                            int &games, int &maxTurns, string &error)
+{
+    const string usage = "Use: tournament -M <maps> -P <strategies> -G <1-5> -D <10-50>";
+    maps.clear();
+    strategies.clear();
+    games = 0;
+    maxTurns = 0;
+    error.clear();
+
+    string spaced = argument;
+    for (char &c : spaced)
+        if (c == ',')
+            c = ' ';
+
+    istringstream stream(spaced);
+    vector<string> tokens;
+    string token;
+    while (stream >> token)
+        tokens.push_back(token);
+
+    vector<string> mapTokens, playerTokens, gameTokens, turnTokens;
+    bool seenM = false, seenP = false, seenG = false, seenD = false;
+    vector<string> *current = nullptr;
+    for (const string &t : tokens)
+    {
+        if (isTournamentFlag(t))
+        {
+            bool &seen = t == "-M" ? seenM : t == "-P" ? seenP : t == "-G" ? seenG : seenD;
+            if (seen)
+            {
+                error = "Flag " + t + " given more than once. " + usage;
+                return false;
+            }
+            seen = true;
+            current = t == "-M" ? &mapTokens : t == "-P" ? &playerTokens : t == "-G" ? &gameTokens : &turnTokens;
+        }
+        else if (current == nullptr)
+        {
+            error = "Unexpected value '" + t + "' before any flag. " + usage;
+            return false;
+        }
+        else
+        {
+            current->push_back(t);
+        }
+    }
+
+    if (!seenM || !seenP || !seenG || !seenD)
+    {
+        error = "Missing one of -M, -P, -G, -D. " + usage;
+        return false;
+    }
+
+    const int mapCount = static_cast<int>(mapTokens.size());
+    if (mapCount < MIN_MAPS || mapCount > MAX_MAPS)
+    {
+        error = "Tournament needs 1 to 5 maps, got " + to_string(mapTokens.size());
+        return false;
+    }
+    for (const string &map : mapTokens)
+    {
+        if (find(maps.begin(), maps.end(), map) != maps.end())
+        {
+            error = "Map listed more than once: " + map;
+            return false;
+        }
+        maps.push_back(map);
+    }
+
+    const int playerCount = static_cast<int>(playerTokens.size());
+    if (playerCount < MIN_PLAYERS || playerCount > MAX_PLAYERS)
+    {
+        error = "Tournament needs 2 to 4 player strategies, got " + to_string(playerTokens.size());
+        return false;
+    }
+    for (const string &player : playerTokens)
+    {
+        string strategy = computerStrategyName(player);
+        if (strategy.empty())
+        {
+            error = "Invalid tournament strategy '" + player + "' (allowed: Aggressive, Benevolent, Neutral, Cheater)";
+            return false;
+        }
+        if (find(strategies.begin(), strategies.end(), strategy) != strategies.end())
+        {
+            error = "Strategy listed more than once: " + strategy;
+            return false;
+        }
+        strategies.push_back(strategy);
+    }
+
+    if (gameTokens.size() != 1 || !toInt(gameTokens[0], games) || games < MIN_GAMES || games > MAX_GAMES)
+    {
+        error = "Number of games (-G) must be a single number from 1 to 5";
+        return false;
+    }
+
+    if (turnTokens.size() != 1 || !toInt(turnTokens[0], maxTurns) || maxTurns < MIN_TURNS || maxTurns > MAX_TURNS)
+    {
+        error = "Maximum number of turns (-D) must be a single number from 10 to 50";
+        return false;
+    }
+    return true;
+}
 
 // Construct an empty command processor.
 CommandProcessor::CommandProcessor() = default;
@@ -104,9 +253,11 @@ Command *CommandProcessor::validate(string &command)
     string argument;
     string extra;
     stream >> name;
-    if (name == "addplayer")
+
+    bool multiWordArgument = name == "addplayer" || name == "tournament";
+    if (multiWordArgument)
     {
-        // Keep the full player specification for name and strategy validation.
+        // Keep the full player specification or tournament parameters for validation
         stream >> ws;
         getline(stream, argument);
     }
@@ -116,7 +267,8 @@ Command *CommandProcessor::validate(string &command)
     }
 
     string effect;
-    if (name != "addplayer" && stream >> extra)
+    
+    if (!multiWordArgument && stream >> extra)
         effect = "Too many arguments for command: " + name;
     else
         GameEngine::getInstance().canExecute(name, argument, &effect);

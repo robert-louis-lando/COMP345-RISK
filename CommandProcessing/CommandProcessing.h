@@ -18,6 +18,9 @@ using namespace std;
 class Command;
 class FileLineReader;
 
+//check the arguments of tournament command
+bool parseTournamentCommand(const string &argument, vector<string> &maps, vector<string> &strategies, int &games, int &maxTurns, string &error);
+
 /** @brief Reads and validates commands and owns their history.
  *  Execution belongs to the game engine, which updates the saved Command's effect.
  *  Derived adapters change only the input source through readCommand().
@@ -26,9 +29,9 @@ class CommandProcessor : public Subject, public ILoggable
 {
 public:
     /** @brief User command names specified for the startup and game-control interface. */
-    inline static constexpr std::string_view VALID_COMMANDS[] = {"loadmap", "validatemap", "addplayer", "gamestart", "replay", "quit"};
+    inline static constexpr std::string_view VALID_COMMANDS[] = {"loadmap", "validatemap", "addplayer", "gamestart", "replay", "quit", "tournament"};
     /** @brief Commands requiring a map filename or player name argument. */
-    inline static constexpr std::string_view NEEDS_ARG[] = {"loadmap", "addplayer"};
+    inline static constexpr std::string_view NEEDS_ARG[] = {"loadmap", "addplayer", "tournament"};
 
     /** @brief Construct a console processor with an empty command history. */
     CommandProcessor();
